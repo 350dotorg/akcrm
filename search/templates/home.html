@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+<html>
+<head>
+  {% block head %}
+  <script type="text/javascript" src="/static/chosen/chosen.jquery.js"></script>
+  <script type="text/javascript">
+  function addSet(setGroup, anchor) {
+    var container = $(anchor).closest(".and-group");
+console.log(anchor);
+    var children = container.find(".paramset");
+    var index = container.index(".and-group");
+    var options = children[0].innerHTML;
+    container.find(".includeSet").append("<br/><br/><br/><div class='addSet'><strong>And:</strong></div><br/>");
+    var wrapper = $("<div />").appendTo(container.find(".includeSet"));
+    $("<select />").attr("data-placeholder", "Choose a search parameter").addClass("paramset")
+       .attr("name", setGroup+":"+index)
+       .append(options)
+       .appendTo(wrapper)
+       .chosen();
+  };
+  function addSetOr(setGroup) {
+    var index = $(".and-group").length;
+    var wrapper = $("<div />").addClass("and-group").html($("#template_and-group").html());
+    wrapper.insertAfter(".and-group:last");
+    wrapper.find("select.paramset")
+       .attr("name", setGroup+":"+index)
+       .chosen();
+    $("<div class='addSetOr'><strong>Or:</strong></div><br/>").insertBefore(wrapper);
+  };
+  </script>
+  <link rel="stylesheet" type="text/css" 
+	href="/static/jquery/jquery.autocomplete.css" />
+  <script type="text/javascript" src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
+  <link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
+  <script type="text/javascript">
+    $(window).load(function() {
+      $(".includeSet.include select.paramset").chosen();
+
+      $("select.paramset").live("change", function() {
+        var that = $(this).parent();
+        that.find(".searchParam").parent(".searchParamContainer").remove();
+        var val = $(this).val();
+        var newEl = $("#template_" + val).clone();
+        newEl.removeAttr("id").addClass("searchParam");
+        var newElWrapper = $("<div>").addClass("searchParamContainer");
+        newEl.appendTo(newElWrapper);
+        newEl.attr("name", $(this).attr("name") + "_" + newEl.attr("name"));
+        newEl.show();
+        newElWrapper.appendTo(that);
+        if( newEl[0].tagName == "SELECT" ) {
+          if( newEl.data("filtertype") == "region" ) {
+            newEl.bind("akcrm:findfields", function() {
+              var data = newEl.closest(".and-group").find("select[name$=_country]").data("available_regions");
+              newEl.html("<option value=''></option>");
+              $.each(data, function(i, n) { 
+                var group = $("<optgroup>").attr("label", i);
+                 $.each(n, function(j, m) {
+                  $("<option>").attr("value", m).text(m).appendTo(group);
+                });
+                group.appendTo(newEl);
+              });
+              newEl.trigger("liszt:updated");
+            });
+            newEl.chosen();
+	    newEl.trigger("akcrm:findfields");
+          } else if( newEl.data("filtertype") == "country" ) {
+            newEl.chosen().change(function() {
+              var countries = newEl.val();
+              if( countries.length ) {
+                newEl.closest(".and-group").find("option[value=region]").removeAttr("disabled");
+                var country_string = "country=" + countries.join("&country=");
+                $.getJSON("{% url choices_regions %}?" + country_string, 
+                  function(data) {
+                    newEl.data("available_regions", data);
+                    newEl.closest(".and-group").find("select[name$=_region]").trigger("akcrm:findfields");
+                });
+              }
+            });
+          } else {
+            newEl.chosen();
+          }
+        } else {
+          newEl.autocomplete(newEl.data("autocomplete_url"), {delay:50, minChars:0}).focus(function() { newEl.data("autocompleter").fetch() });
+
+        }
+      });
+    });
+  </script>
+  <style type="text/css">
+    .and-group {
+      border: 1px solid gray;
+      border-radius: 5px;
+      padding: 0 10px 8px 10px;
+      margin-bottom: 15px;
+    }
+    .includeSet .chzn-container, .searchParamContainer {
+      float: left;
+      display: inline;
+      padding-right: 5px;
+    }
+    .searchParamContainer .chzn-choices {
+      border-radius: 2px;
+    }
+    .addSet, .addSetOr {
+      display: block;
+      clear: both;
+    }
+    li.bsmListItem {
+      border-radius: 5px;
+      margin: 2px 0;
+    }
+    a.bsmListItemRemove {
+      color: #C95A00;
+      font-size: 0.75em;
+    }
+    div.includeSet {
+      background-color: #EEE;
+      border-radius: 9px;
+      clear: both;
+    }
+    div.input {
+      margin-left: 0;
+    }
+    label {
+      padding-right: 5px;
+      width: auto;
+    }
+  </style>
+  {% endblock %}
+</head>
+<body>
+{% block nav %}
+<li class="active"><a href="/">New Search</a></li>
+{% endblock %}
+
+{% block content %}
+<h1>Actionkit User Search</h1>
+
+<div class="span12">
+<form action="/search/">
+  <div style="clear: both;">
+    <input type="submit" value="Search for entries" />
+  </div>
+  <fieldset>
+    <div class="clearfix">
+      <div style="float: left; padding-right: 15px;">
+	<div class="input">
+	  <label for="user_name">Search by name:</label>
+	  <input type="text" name="user_name" />
+	</div>
+      </div>
+      <div style="float: left">
+	<div class="input">
+	  <label for="user_email">And/or email:</label>
+	  <input type="text" name="user_email" />
+	</div>
+      </div>
+    </div>
+    <div class="clearfix">
+
+      <div style="display:none" id="searchTemplates">
+
+	<div id="template_and-group">
+	  <br/>
+	  <div><strong>Search for users where:</strong></div>
+	  <br/>
+	  {% with command="template" name="template:0" %}
+	  {% include "_fields.html" %}
+	  {% endwith %}
+	  <br /><br /><br />
+	  <a class="addSet" onclick="addSet('include', this); return false;"
+	     href="#">And...</a>
+	</div>
+
+	<select id="template_country"
+		name="country" data-filtertype="country" multiple="multiple">
+	  <option value=""></option>
+	  {% for country in countries %}
+	  <option value="{{ country }}">{{ country }}</option>
+	  {% endfor %}
+	</select>
+	<select id="template_region"
+		name="region" data-filtertype="region" multiple="multiple">
+	  <option value=""></option>
+	</select>
+
+	<select id="template_state"
+		name="state" multiple="multiple">
+	  <option value=""></option>
+	</select>
+
+	<select id="template_city"
+		name="city" multiple="multiple">
+	  <option value=""></option>
+	</select>
+
+	<select id="template_action"
+		name="action" multiple="multiple">
+	  <option value=""></option>
+	  {% for item in pages %}
+	  <option value="{{ item.id }}">
+	    {{ item }}
+	  </option>
+	  {% endfor %}
+	</select>
+
+	<select id="template_tag"
+		name="tag"
+		data-placeholder="Choose one or more tags"
+		multiple="multiple">
+	  {% for item in tags %}
+	  <option value="{{item.id}}">
+	    {{item.name}}
+	  </option>
+	  {% endfor %}
+	</select>
+
+	<select id="template_organization"
+		name="organization"
+		multiple="multiple">
+	  {% for item in organizations %}
+	  <option value="{{item}}">
+	    {{item}}
+	  </option>
+	  {% endfor %}
+	</select>
+
+	<select id="template_skills"
+		name="skills"
+		multiple="multiple">
+	  {% for item in skills %}
+	  <option value="{{item}}">
+	    {{item}}
+	  </option>
+	  {% endfor %}
+	</select>
+
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="and-group">
+    <br/>
+    <div><strong>Search for users where:</strong></div>
+    <br/>
+    {% with command="include" name="include:0" %}
+    {% include "_fields.html" %}
+    {% endwith %}
+    <br /><br /><br />
+    <a class="addSet" onclick="addSet('include', this); return false;"
+       href="#">And...</a>
+  </div>
+
+  <a class="addSetOr" onclick="addSetOr('include'); return false;"
+     href="#">Or...</a>
+
+</form>
+</div>
+<br/><br/><br/><br/>
+{% endblock %}
+
+</body>
+</html>

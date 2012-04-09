@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load helpful_tags %}
+<html>
+<head>
+  {% block head %}
+  <script type="text/javascript" src="/static/datatables/js/jquery.dataTables.js"></script>
+  <link rel="stylesheet" type="text/css" href="/static/datatables/css/demo_table_jui.css" />
+  <link rel="stylesheet" type="text/css" href="/static/smoothness/jquery-ui.custom.css" />
+  <script type="text/javascript">
+    $(window).load(function() {
+      $("#num_results").text($("tr.gradeA").length);
+      $("table#ngot_data").dataTable({
+        "bJQueryUI": true,
+        "sPaginationType": "full_numbers"
+      });
+    });
+  </script>
+  {% endblock %}
+</head>
+<body>
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">Get Raw SQL for ActionKit Mailings</a></li>
+  <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">Get AKIDs for Actionkit Includes/Excludes</a></li>
+  {% endblock %}
+
+  {% block content %}
+<h1>Found: <span id="num_results">{{ users|length }}</span> people</h1>
+<div>
+Searched for people who match::
+<pre>{{ human_query }}</pre>
+</div>
+
+<div class="datatables_wrapper">
+<table class="display" id="ngot_data">
+  <thead>
+  <tr>
+    <th>Name</th>
+    <th>Email</th>
+    <th>Phone</th>
+    <th>Country</th>
+    <th>State</th>
+    <th>City</th>
+    <th>Organization</th>
+    <th>Sign-up Date</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for user in users %}
+  {% ifchanged user %}
+  <tr class="gradeA">
+    <td><a href="{{ user.get_absolute_url }}">
+	{{ user|default:"" }}</a></td>
+    <td><a href="{{ user.get_absolute_url }}">
+	{{ user.email|default:"" }}</a></td>
+    <td>{{ user.phone|default:"" }}</td>
+    <td>{{ user.country|default:"" }}</td>
+    <td>{{ user.state|default:"" }}</td>
+    <td>{{ user.city|default:"" }}</td>
+    <td>{{ user.organization|default:"" }}</td>
+    <td>{{ user.created_at|date:"Y/m/d" }}</td>
+  </tr>
+  {% endifchanged %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% endblock %}
+
+</body>
+</html>

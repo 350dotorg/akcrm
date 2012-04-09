@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+<html>
+<head>
+  {% block head %}
+  <script type="text/javascript" src="/static/chosen/chosen.jquery.js"></script>
+  <link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+  <script type="text/javascript" src="/static/chosen/chosen.jquery.js"></script>
+  <script type="text/javascript" src="/static/datatables/js/jquery.dataTables.js"></script>
+  <link rel="stylesheet" type="text/css" href="/static/datatables/css/demo_table_jui.css" />
+  <link rel="stylesheet" type="text/css" href="/static/smoothness/jquery-ui.custom.css" />
+  <script type="text/javascript">
+    $(window).load(function() {
+      $("select[multiple]").chosen();
+    });
+    saveSkills = function() {
+      var form = $("#skills");
+      $.post(form.attr("action"), form.serialize());
+    };
+    addSkill = function() {
+      $("<div class='input-prepend'><span class='add-on'><a href='#' class='icon-minus-sign'></a></span><input type='text' name='skills' /></div>").appendTo("#skills");
+    };
+    $("#skills .input-prepend a.icon-minus-sign").live("click", function() {
+      $(this).closest(".input-prepend").remove();
+      saveSkills();
+      return false;
+    });
+    $("#skills a.add").live("click", function() {
+      addSkill();
+      return false;
+    });
+    $("#skills").live("submit", function() {
+      saveSkills();
+      return false;
+    });
+    $("#skills").live("change", function() {
+      saveSkills();
+      return false;
+    });
+    $("#skills").live("blur", function() {
+      saveSkills();
+      return false;
+    });
+  </script>
+  <script type="text/javascript">
+    $(window).load(function() {
+      $("#num_results").text($("tr.gradeA").length);
+      $("table.datatable").dataTable({
+        "bJQueryUI": true,
+        "sPaginationType": "full_numbers"
+      });
+    });
+  </script>
+  <style type="text/css">
+    li.bsmListItem {
+      border-radius: 5px;
+      margin: 2px 0;
+    }
+    a.bsmListItemRemove {
+      color: #C95A00;
+      font-size: 0.75em;
+    }
+    div.includeSet {
+      background-color: #EEE;
+      border-radius: 9px;
+    }
+  </style>
+  {% endblock %}
+</head>
+<body>
+{% block nav %}
+<li><a href="{% url home %}">New Search</a></li>
+{% if query %}
+<li><a href="{% url search %}?{{query}}">Back to Results</a></li>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row">
+<div class="span6" id="content-box">
+ <p>
+   <strong>Name:</strong> {{ agent }}
+ </p>
+ <p>
+   <strong>Email:</strong> {{ agent.email }}
+ </p>
+ <p>
+   <strong>Phone:</strong> {{ agent.phone }}
+ </p>
+ <p>
+   <strong>ZIP:</strong> {{ agent.zip }}
+ </p>
+ <p>
+   <strong>Address:</strong> {{ agent.formatted_address }}
+ </p>
+ <p>
+   <form id="skills" method="POST" action="{% url edit_skills agent.id %}">
+     {% csrf_token %}
+     <div style="padding-bottom: 5px">
+       <strong>Skills:</strong>
+       <a href="#" class="add btn"><i class="icon-plus-sign"></i></a>
+     </div>
+     {% for skill in agent.custom_fields.skills %}
+     <div class="input-prepend">
+       <span class="add-on">
+	 <a href="#" class="icon-minus-sign"></a>
+       </span>
+       <input type="text" name="skills" value="{{ skill }}" />
+     </div>
+     {% endfor %}
+   </form>
+ </p>
+</div>
+<div class="span6">
+  {% with action=actions.0 order=orders.0 click=clicks.0 open=opens.0 send=sends.0 %}
+  <p>
+    <strong>Latest Activity:</strong>
+    {{ action.created_at|date:"m/d/y" }} &ndash; {{ action.page.title }}
+  </p>
+  <p>
+    <strong>Latest Contribution:</strong>
+    {{ order.created_at|date:"m/d/y" }} &ndash; {{ order.action.page.title }} 
+    &ndash; ${{ order.total|floatformat:2 }}
+  </p>
+  <p>
+    <strong>Opens:</strong> {{ opens|length }}
+    &mdash;
+    <strong>Clicks:</strong> {{ clicks|length }}
+    &mdash;
+    <strong>Sends:</strong> {{ sends.count }}
+  </p>
+  <p>
+    <strong>Latest Mailing:</strong>
+    {{ send.created_at|date:"m/d/y" }} &ndash; {{ send.subject.text }}
+    &ndash; sent {{ send.created_at|date:"m/d/y" }}
+  </p>
+  <p>
+    <strong>Latest Open:</strong>
+    {{ open.created_at|date:"m/d/y" }} &ndash; {{ open.subject_text }}
+    &ndash; sent {{ open.mailed_at|date:"m/d/y" }}
+  </p>
+  <p>
+    <strong>Latest Click:</strong>
+    {{ click.created_at|date:"m/d/y" }} &ndash; {{ click.subject_text }}
+    &ndash; sent {{ click.mailed_at|date:"m/d/y" }}
+  </p>
+
+  {% endwith %}
+</div>
+</div>
+
+<div class="row">
+  <div class="span12">
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#action-history" data-toggle="tab">Action History</a></li>
+      <li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
+      <li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
+    </ul>
+
+    <div class="tab-content">
+    <div class="tab-pane active" id="action-history">
+      <div class="datatables_wrapper">
+	<table class="display datatable" id="action_data">
+	  <thead>
+	    <tr>
+	      <th>Took Action On</th>
+	      <th>Page</th>
+	      <th>Page Type</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    {% for action in actions %}
+	    <tr>
+	      <td>
+		{{ action.created_at|date }} 
+	      </td>
+	      <td>
+		{{ action.page.title }}
+	      </td>
+	      <td>
+		{{ action.page.type }}
+	      </td>
+	    </tr>
+	    {% endfor %}
+	  </tbody>
+	</table>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="donation-history">
+      <div class="datatables_wrapper">
+	<table class="display datatable" id="donation_data">
+	  <thead>
+	    <tr>
+	      <th>Donated On</th>
+	      <th>Amount</th>
+	      <th>Status</th>
+	      <th>Page</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    {% for order in orders %}
+	    <tr>
+	      <td>
+		{{ order.created_at|date }} 
+	      </td>
+	      <td>
+		{{ order.total|floatformat:2 }}
+	      </td>
+	      <td>
+		{{ order.status }}
+	      </td>
+	      <td>
+		{{ order.action.page.title }}
+	      </td>
+	    </tr>
+	    {% endfor %}
+	  </tbody>
+	</table>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="mailing-history">
+      <div class="datatables_wrapper">
+	<table class="display datatable" id="mailing_data">
+	  <thead>
+	    <tr>
+	      <th>Sent On</th>
+	      <th>Subject</th>
+	      <th>Opens</th>
+	      <th>Clicks</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	  </tbody>
+	</table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  $(window).load(function() {
+    $.getJSON("{% url mailing_history agent.id %}", function(data) {
+      var table = $("#mailing_data").dataTable();
+      $.each(data, function(i, row) {
+        table.fnAddData([row.mailed_at, row.subject_text,
+                         row.opens.length, row.clicks.length]);
+      });
+    });
+  });
+</script>
+
+{% endblock %}
+</body>
+</html>

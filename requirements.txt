@@ -1,0 +1,6 @@
+Django
+djangohelpers
+django-debug-toolbar
+http://pypi.python.org/packages/source/M/MySQL-python/MySQL-python-1.2.3.tar.gz
+-e git+gitolite@git.boldprogressives.org:django-actionkit.git#egg=django-actionkit-dev
+Fabric

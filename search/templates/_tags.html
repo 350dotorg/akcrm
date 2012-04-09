@@ -1,0 +1,45 @@
+<form method="POST" action="{% url detail_tags user.id %}">
+  {% csrf_token %}
+
+  <div class="includeSet">
+    <fieldset>
+    <legend style="padding-left: 0">General</legend>
+    <div class="clearfix">
+      <div style="margin-left: 0" class="input">
+	<div class="input-prepend">
+	  <label class="add-on">
+	    <input type="checkbox" id="tag_crazy" name="tag"
+		   {% if "crazy" in action_fields %}checked="checked"{% endif %}
+		   value="crazy" />
+	  </label>
+	  <input disabled="disabled" class="fake-disabled span5" 
+		 {% if "crazy" in action_fields %}style="font-weight: bold"{% endif %}
+		 value="Crazy" />
+	</div>
+      </div>
+    </div>
+    </fieldset>
+    {% for category, items in fields.items %}
+    <fieldset>
+    <legend style="padding-left: 0">{{category}}</legend>
+    {% for item in items %}
+    <div class="clearfix">
+      <div style="margin-left: 0" class="input">
+	<div class="input-prepend">
+	  <label class="add-on">
+	    <input type="checkbox" id="tag_{{item.0}}" name="tag"
+		   {% if item.0 in action_fields %}checked="checked"{% endif %}
+		   value="{{item.0}}" />
+	  </label>
+	  <input disabled="disabled" class="fake-disabled span5" 
+		 {% if item.0 in action_fields %}style="font-weight: bold"{% endif %}
+		 value="{{item.1}}" />
+	</div>
+      </div>
+    </div>
+    {% endfor %}
+    </fieldset>
+    {% endfor %}
+  </div>
+
+</form>

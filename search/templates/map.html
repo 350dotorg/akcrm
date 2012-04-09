@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load helpful_tags %}
+<html>
+<head>
+  {% block head %}
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+	<script type="text/javascript">
+		function createDistrictsOverlay(outlines_only, opacity, cd) {
+                  cd = cd.split("_");
+                  var state = cd[0]; var district = cd[1];
+			return {
+			  getTileUrl: function(coord, zoom) 
+			  {
+		                return "http://www.govtrack.us/perl/wms/wms.cgi?google_tile_template_values=" + coord.x + "," + coord.y + "," + zoom
+				  	+ "&LAYERS=cd-110" + (outlines_only ? "-outlines" : "")
+					+ (state ? ":http://www.rdfabout.com/rdf/usgov/geo/us/" + state
+						+ (!district ? "%25"
+							: "/cd/110/" + district)
+						: "")
+					+ "&FORMAT=image/png";	
+			  },
+			  tileSize: new google.maps.Size(256, 256),
+			  minZoom: 2,
+			  maxZoom: 28,
+			  opacity: opacity,
+			  isPng: true
+			};		
+		}
+		
+		var map;
+		
+		function initialize() {
+			var myOptions = {
+				zoom: 4,
+				center: new google.maps.LatLng(40.6429175, -73.959698),
+				mapTypeId: google.maps.MapTypeId.ROADMAP,
+				panControl: false,
+				zoomControl: true,
+				mapTypeControl: false,
+				scaleControl: true,
+				streetViewControl: false
+				};
+			map = new google.maps.Map(document.getElementById("map_canvas"),
+			myOptions);
+
+		overlayWMS = [];
+		map.addDistrictOverlay = function(cd) {
+		        if( overlayWMS.indexOf(cd + "_0") == -1 ) {
+			  var wms = new google.maps.ImageMapType(createDistrictsOverlay(false, .2, cd));
+			  map.overlayMapTypes.insertAt(0, wms);
+		          overlayWMS.unshift(cd + "_0");
+		        }
+		        if( overlayWMS.indexOf(cd + "_1") == -1 ) {
+			  var wms = new google.maps.ImageMapType(createDistrictsOverlay(true, .7, cd));
+			  map.overlayMapTypes.insertAt(0, wms);
+		          overlayWMS.unshift(cd + "_1");
+                        }
+                 };
+		map.removeDistrictOverlay = function(cd) {
+		  var wms = overlayWMS.indexOf(cd + "_0");
+                  if( wms ) {
+		    map.overlayMapTypes.removeAt(wms);
+		    overlayWMS.splice(wms, 1);
+                  }
+		  var wms = overlayWMS.indexOf(cd + "_1");
+                  if( wms ) {
+		    map.overlayMapTypes.removeAt(wms);
+		    overlayWMS.splice(wms, 1);
+                  }
+		}
+
+
+var bounds = new google.maps.LatLngBounds();
+var markers = [];
+var infowindow = new google.maps.InfoWindow({ content: "" });
+{% for geom in geoms %}
+var position = new google.maps.LatLng({{ geom.latitude }}, 
+                                      {{ geom.longitude }});
+var marker = new google.maps.Marker({
+  position: position,
+  map: map,
+  info: "<a href='{% url detail geom.user.id %}'>{{ geom.user }}</a><p>{{ geom.user.formatted_address }}</p>"
+});
+bounds.extend(position);
+markers.push(marker);
+google.maps.event.addListener(marker, 'click', function () {
+                infowindow.setContent(this.info);
+                infowindow.open(map, this);
+});
+
+{% endfor %}
+map.setCenter(bounds.getCenter());
+map.fitBounds(bounds);
+
+		var mh = document.getElementById("map_canvas").offsetHeight;
+		document.getElementById("map_canvas").style.height = "800px";
+
+		$("#add_cd").click(function() {
+		  var cd = prompt("Enter the congressional district to add to the map, for example CA_25, NH_1 or AK");
+		  map.addDistrictOverlay(cd);
+                });
+		$("#remove_cd").click(function() {
+		  var cd = prompt("Enter the congressional district to remove from the map, for example CA_25, NH_1 or AK");
+		  map.removeDistrictOverlay(cd);
+                });
+
+		};
+
+$(window).load(function() { initialize(); });
+
+	</script>
+	{% endblock %}
+</head>
+<body>
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  <li><a href="{% url search %}{{request.GET|qsify}}">Return to Table View</a></li>
+  <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">Get Raw SQL for ActionKit Mailings</a></li>
+  <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">Get AKIDs for Actionkit Includes/Excludes</a></li>
+  {% endblock %}
+
+  {% block content %}
+  <div>
+    <span style="float: right">
+      <a id="add_cd" href="#">Add Congressional District Overlay</a> |
+      <a id="remove_cd" href="#">Remove Congressional District Overlay</a>
+    </span>
+  </div>
+  <div id="map_canvas" style="width: 100%; height: 90%"> </div>
+  {% endblock %}
+</body>
+</html>
+

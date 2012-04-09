@@ -1,0 +1,15 @@
+{% if files|length %}
+<h3>Uploaded Files</h3>
+<ol>
+{% for file in files %}
+<li>
+  <a href="{% url file_download user.id file.name %}">{{ file.name }}</a>
+  <form class="gdocs"
+	method="POST" action="{% url file_download user.id file.name %}">
+    {% csrf_token %}
+    <input type="Submit" value="View In Google Docs" />
+  </form>
+</li>
+{% endfor %} 
+</ol>
+{% endif %}
