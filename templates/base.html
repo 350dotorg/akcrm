@@ -20,10 +20,24 @@
     <script type="text/javascript" src="https://raw.github.com/janl/mustache.js/master/mustache.js"></script>
     <script src="/static/bootstrap/js/bootstrap-tab.js"></script>
 
+    <script type="text/javascript" src="/static/datatables/js/jquery.dataTables.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/datatables/css/demo_table_jui.css" />
+    <link rel="stylesheet" type="text/css" href="/static/smoothness/jquery-ui.custom.css" />
+
     <style type="text/css">
+      td.group {
+        background-color: #E0F9FF;
+        border-top: none;
+      }
+      .expand_details .offset1 {
+        margin-left: 100px;
+      }
+      .expand_details h4 a {
+        font-size: 0.6em;
+      }
       .datatables_wrapper td.group {
-        padding-left: 5px;
-        padding-right: 5px;
+        padding-left: 20px;
+        padding-right: 20px;
       }
       .expand_details [class*="span"] {
         float: left !important;

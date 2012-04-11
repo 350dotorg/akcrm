@@ -3,9 +3,6 @@
 <html>
 <head>
   {% block head %}
-  <script type="text/javascript" src="/static/datatables/js/jquery.dataTables.js"></script>
-  <link rel="stylesheet" type="text/css" href="/static/datatables/css/demo_table_jui.css" />
-  <link rel="stylesheet" type="text/css" href="/static/smoothness/jquery-ui.custom.css" />
   <script type="text/javascript">
     $(window).load(function() {
       $("#num_results").text($("tr.gradeA").length);
@@ -15,21 +12,33 @@
       });
     });
 
+    $(".expand_details h4 a").live("click", function() {
+      $(this).closest("div").find("ol li, ol li ul").show(); return false;
+    });
     $(".expand").live("click", function() {
       $("tr.expand_details").remove();
         var expanded = $('<tr class="expand_details"><td colspan="8" class="group">' +
-	'<div>Loading details; please wait, or <a href="' + $(this).attr("href") +
+	'<div style="padding-top: 5px; padding-bottom: 10px;"><img style="padding-right:10px; margin-left:-5px;"  src="/static/load.gif" />' + 
+        'Loading details; please wait, or <a href="' + $(this).attr("href") +
         '">click here</a> to view full details</div></td></tr>'
         ).insertAfter($(this).closest("tr"));
       $.getJSON($(this).attr("href") + "json/", function(data) {
+        data["full_details_href"] = expanded.find("td.group div a").attr("href");
         var output = Mustache.render($("#details_tmpl").text(), data);
-        expanded.find("td.group div").html(output + expanded.find("td.group div a")[0].outerHTML);
+        expanded.find("td.group div").html(output);
+        expanded.find("td.group div ol li ul").hide();
+        expanded.find("td.group div ol li").each(function() {
+          if( $(this).index() > 4 ) { $(this).hide(); }
+        });
       });
       return false;
     });
   </script>
   <script type="text/javascript_template" id="details_tmpl">
     {% verbatim %}
+    <div class="span12">
+      <h4><a href="{{ full_details_href }}">View full details</a></h4>
+    </div>
     <div class="span6">
       <p>
 	<strong>Latest Activity:</strong>
@@ -64,6 +73,40 @@
 	{{ latest_click.created_at }} &ndash; {{ latest_click.subject_text }}
 	&ndash; sent {{ latest_click.mailed_at }}
       </p>
+    </div>
+    <div class="span3">
+      <h4>Actions <a href="#">(View all)</a></h4>
+      <ol>
+	{{ #actions }}
+	<li>
+	  {{ page_title }} &ndash; {{ created_at }}
+	</li>
+	{{ /actions }}
+      </ol>
+    </div>
+    <div class="span3 offset1">
+      <h4>Donations <a href="#">(View all)</a></h4>
+      <ol>
+	{{ #orders }}
+	<li>
+	  ${{ total }}: {{ page_title }} &ndash; {{ created_at }}
+	</li>
+	{{ /orders }}
+      </ol>
+    </div>
+    <div class="span3 offset1">
+      <h4>Mailings <a href="#">(View all)</a></h4>
+      <ol>
+	{{ #sends }}
+	<li>
+	  {{ subject_text }} &ndash; {{ mailed_at }}
+	  <ul>
+	    <li>Opens: {{ opens.length }}</li>
+	    <li>Clicks: {{ clicks.length }}</li>
+	  </ul>
+	</li>
+	{{ /sends }}
+      </ol>
     </div>
     {% endverbatim %}
   </script>

@@ -239,7 +239,6 @@ def detail_json(request, user_id):
             return date(obj)
         elif hasattr(obj, 'to_json'):
             return obj.to_json()
-    agent = ctx['agent']
     try:
         ctx['latest_action'] = ctx['actions'][0]
     except IndexError:
@@ -249,10 +248,6 @@ def detail_json(request, user_id):
     except IndexError:
         ctx['latest_order'] = None
     try:
-        ctx['latest_send'] = ctx['sends'][0]
-    except IndexError:
-        ctx['latest_send'] = None
-    try:
         ctx['latest_open'] = ctx['opens'][0]
     except IndexError:
         ctx['latest_open'] = None
@@ -261,6 +256,12 @@ def detail_json(request, user_id):
     except IndexError:
         ctx['latest_click'] = None
 
+    agent = ctx['agent']
+    ctx['sends'] = _mailing_history(request, agent).values()
+    try:
+        ctx['latest_send'] = ctx['sends'][0]
+    except IndexError:
+        ctx['latest_send'] = None    
 
     return HttpResponse(json.dumps(ctx, cls=JSONEncoder, default=dthandler),
                         content_type="application/json")
@@ -283,14 +284,7 @@ def _detail(request, user_id):
 
     return locals()
 
-
-@allow_http("GET")
-def mailing_history(request, user_id):
-    try:
-        agent = CoreUser.objects.using("ak").get(id=user_id)
-    except CoreUser.DoesNotExist:
-        return HttpResponseNotFound("No such record exists")
-
+def _mailing_history(request, agent):
     _sends = mailings_by_user(agent)
 
     sends = {}
@@ -313,6 +307,17 @@ def mailing_history(request, user_id):
         sends[id]['clicks'] = list(sends[id]['clicks'])
         sends[id]['opens'] = list(sends[id]['opens'])
     
+    return sends
+
+@allow_http("GET")
+def mailing_history(request, user_id):
+    try:
+        agent = CoreUser.objects.using("ak").get(id=user_id)
+    except CoreUser.DoesNotExist:
+        return HttpResponseNotFound("No such record exists")
+
+    sends = _mailing_history(request, agent)
+
     def dthandler(obj):
         if isinstance(obj, datetime.datetime):
             return date(obj)
