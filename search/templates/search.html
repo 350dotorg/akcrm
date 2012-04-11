@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load helpful_tags %}
+{% load helpful_tags verbatim %}
 <html>
 <head>
   {% block head %}
@@ -14,6 +14,58 @@
         "sPaginationType": "full_numbers"
       });
     });
+
+    $(".expand").live("click", function() {
+      $("tr.expand_details").remove();
+        var expanded = $('<tr class="expand_details"><td colspan="8" class="group">' +
+	'<div>Loading details; please wait, or <a href="' + $(this).attr("href") +
+        '">click here</a> to view full details</div></td></tr>'
+        ).insertAfter($(this).closest("tr"));
+      $.getJSON($(this).attr("href") + "json/", function(data) {
+        var output = Mustache.render($("#details_tmpl").text(), data);
+        expanded.find("td.group div").html(output + expanded.find("td.group div a")[0].outerHTML);
+      });
+      return false;
+    });
+  </script>
+  <script type="text/javascript_template" id="details_tmpl">
+    {% verbatim %}
+    <div class="span6">
+      <p>
+	<strong>Latest Activity:</strong>
+	{{ latest_action.created_at }} &ndash; {{ latest_action.page_title }}
+      </p>
+      <p>
+	<strong>Latest Contribution:</strong>
+	{{ latest_order.created_at }} &ndash; {{ latest_order.action.page_title }} 
+	&ndash; ${{ latest_order.total }}
+      </p>
+      <p>
+	<strong>Opens:</strong> {{ opens.length }}
+	&mdash;
+	<strong>Clicks:</strong> {{ clicks.length }}
+	&mdash;
+	<strong>Sends:</strong> {{ sends.length }}
+      </p>
+    </div>
+    <div class="span6">
+      <p>
+	<strong>Latest Mailing:</strong>
+	{{ latest_send.created_at }} &ndash; {{ latest_send.subject_text }}
+	&ndash; sent {{ latest_send.created_at }}
+      </p>
+      <p>
+	<strong>Latest Open:</strong>
+	{{ latest_open.created_at }} &ndash; {{ latest_open.subject_text }}
+	&ndash; sent {{ latest_open.mailed_at }}
+      </p>
+      <p>
+	<strong>Latest Click:</strong>
+	{{ latest_click.created_at }} &ndash; {{ latest_click.subject_text }}
+	&ndash; sent {{ latest_click.mailed_at }}
+      </p>
+    </div>
+    {% endverbatim %}
   </script>
   {% endblock %}
 </head>
@@ -49,9 +101,9 @@ Searched for people who match::
   {% for user in users %}
   {% ifchanged user %}
   <tr class="gradeA">
-    <td><a href="{{ user.get_absolute_url }}">
+    <td><a class="expand" href="{{ user.get_absolute_url }}">
 	{{ user|default:"" }}</a></td>
-    <td><a href="{{ user.get_absolute_url }}">
+    <td><a class="expand" href="{{ user.get_absolute_url }}">
 	{{ user.email|default:"" }}</a></td>
     <td>{{ user.phone|default:"" }}</td>
     <td>{{ user.country|default:"" }}</td>

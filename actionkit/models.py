@@ -63,6 +63,18 @@ class CoreUser(models.Model):
     def organization(self):
         return ", ".join(self.custom_fields().get("organization", []))
 
+    def to_json(self):
+        agent = self
+        return dict(
+            name=unicode(agent),
+            email=agent.email,
+            phone=agent.phone(),
+            zip=agent.zip,
+            address=agent.formatted_address(),
+            skills=agent.custom_fields().get('skills', []),
+            id=agent.id,
+            )
+
 class CoreLocation(models.Model):
     user = models.OneToOneField(CoreUser, related_name="location", primary_key=True)
     latitude = models.FloatField(null=True, blank=True)
@@ -131,6 +143,12 @@ class CoreAction(models.Model):
     class Meta:
         db_table = u'core_action'
         managed = False
+
+    def to_json(self):
+        return dict(
+            created_at=self.created_at,
+            page_title=self.page.title,
+            )
         
 class CoreActionField(models.Model):
     parent = models.ForeignKey(CoreAction, related_name='fields')
@@ -201,6 +219,12 @@ class CoreUserMailing(models.Model):
     class Meta:
         db_table = u'core_usermailing'
         managed = False
+
+    def to_json(self):
+        return dict(
+            created_at=self.created_at,
+            subject_text=self.subject.text,
+            )
 
 from django.db import connections
 

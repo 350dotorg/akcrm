@@ -9,6 +9,7 @@ import os.path
 import re
 import datetime
 from django.template.defaultfilters import date
+from django.utils.simplejson import JSONEncoder
 
 QUERIES = {
     'country': {
@@ -228,6 +229,44 @@ def _search(request):
 @allow_http("GET")
 @rendered_with("detail.html")
 def detail(request, user_id):
+    return _detail(request, user_id)
+
+@allow_http("GET")
+def detail_json(request, user_id):
+    ctx = _detail(request, user_id)
+    def dthandler(obj):
+        if isinstance(obj, datetime.datetime):
+            return date(obj)
+        elif hasattr(obj, 'to_json'):
+            return obj.to_json()
+    agent = ctx['agent']
+    try:
+        ctx['latest_action'] = ctx['actions'][0]
+    except IndexError:
+        ctx['latest_action'] = None
+    try:
+        ctx['latest_order'] = ctx['orders'][0]
+    except IndexError:
+        ctx['latest_order'] = None
+    try:
+        ctx['latest_send'] = ctx['sends'][0]
+    except IndexError:
+        ctx['latest_send'] = None
+    try:
+        ctx['latest_open'] = ctx['opens'][0]
+    except IndexError:
+        ctx['latest_open'] = None
+    try:
+        ctx['latest_click'] = ctx['clicks'][0]
+    except IndexError:
+        ctx['latest_click'] = None
+
+
+    return HttpResponse(json.dumps(ctx, cls=JSONEncoder, default=dthandler),
+                        content_type="application/json")
+    
+    
+def _detail(request, user_id):
     try:
         agent = CoreUser.objects.using("ak").get(id=user_id)
     except CoreUser.DoesNotExist:
