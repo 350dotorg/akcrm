@@ -12,7 +12,7 @@
       });
     });
 
-    $(".expand_details h4 a").live("click", function() {
+    $(".expand_details h4.heading a").live("click", function() {
       $(this).closest("div").find("ol li, ol li ul").show(); return false;
     });
     $(".expand").live("click", function() {
@@ -75,7 +75,7 @@
       </p>
     </div>
     <div class="span3">
-      <h4>Actions <a href="#">(View all)</a></h4>
+      <h4 class="heading">Actions <a href="#">(View all)</a></h4>
       <ol>
 	{{ #actions }}
 	<li>
@@ -85,7 +85,7 @@
       </ol>
     </div>
     <div class="span3 offset1">
-      <h4>Donations <a href="#">(View all)</a></h4>
+      <h4 class="heading">Donations <a href="#">(View all)</a></h4>
       <ol>
 	{{ #orders }}
 	<li>
@@ -95,7 +95,7 @@
       </ol>
     </div>
     <div class="span3 offset1">
-      <h4>Mailings <a href="#">(View all)</a></h4>
+      <h4 class="heading">Mailings <a href="#">(View all)</a></h4>
       <ol>
 	{{ #sends }}
 	<li>
