@@ -29,7 +29,7 @@ console.log(anchor);
   };
   </script>
   <link rel="stylesheet" type="text/css" 
-	href="/static/jquery/jquery.autocomplete.css" />
+        href="/static/jquery/jquery.autocomplete.css" />
   <script type="text/javascript" src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
   <link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
   <script type="text/javascript">
@@ -62,7 +62,7 @@ console.log(anchor);
               newEl.trigger("liszt:updated");
             });
             newEl.chosen();
-	    newEl.trigger("akcrm:findfields");
+            newEl.trigger("akcrm:findfields");
           } else if( newEl.data("filtertype") == "country" ) {
             newEl.chosen().change(function() {
               var countries = newEl.val();
@@ -144,96 +144,96 @@ console.log(anchor);
   <fieldset>
     <div class="clearfix">
       <div style="float: left; padding-right: 15px;">
-	<div class="input">
-	  <label for="user_name">Search by name:</label>
-	  <input type="text" name="user_name" />
-	</div>
+        <div class="input">
+          <label for="user_name">Search by name:</label>
+          <input type="text" name="user_name" />
+        </div>
       </div>
       <div style="float: left">
-	<div class="input">
-	  <label for="user_email">And/or email:</label>
-	  <input type="text" name="user_email" />
-	</div>
+        <div class="input">
+          <label for="user_email">And/or email:</label>
+          <input type="text" name="user_email" />
+        </div>
       </div>
     </div>
     <div class="clearfix">
 
       <div style="display:none" id="searchTemplates">
 
-	<div id="template_and-group">
-	  <br/>
-	  <div><strong>Search for users where:</strong></div>
-	  <br/>
-	  {% with command="template" name="template:0" %}
-	  {% include "_fields.html" %}
-	  {% endwith %}
-	  <br /><br /><br />
-	  <a class="addSet" onclick="addSet('include', this); return false;"
-	     href="#">And...</a>
-	</div>
+        <div id="template_and-group">
+          <br/>
+          <div><strong>Search for users where:</strong></div>
+          <br/>
+          {% with command="template" name="template:0" %}
+          {% include "_fields.html" %}
+          {% endwith %}
+          <br /><br /><br />
+          <a class="addSet" onclick="addSet('include', this); return false;"
+             href="#">And...</a>
+        </div>
 
-	<select id="template_country"
-		name="country" data-filtertype="country" multiple="multiple">
-	  <option value=""></option>
-	  {% for country in countries %}
-	  <option value="{{ country }}">{{ country }}</option>
-	  {% endfor %}
-	</select>
-	<select id="template_region"
-		name="region" data-filtertype="region" multiple="multiple">
-	  <option value=""></option>
-	</select>
+        <select id="template_country"
+                name="country" data-filtertype="country" multiple="multiple">
+          <option value=""></option>
+          {% for country in countries %}
+          <option value="{{ country }}">{{ country }}</option>
+          {% endfor %}
+        </select>
+        <select id="template_region"
+                name="region" data-filtertype="region" multiple="multiple">
+    <option value=""></option>
+  </select>
 
-	<select id="template_state"
-		name="state" multiple="multiple">
-	  <option value=""></option>
-	</select>
+  <select id="template_state"
+    name="state" multiple="multiple">
+    <option value=""></option>
+  </select>
 
-	<select id="template_city"
-		name="city" multiple="multiple">
-	  <option value=""></option>
-	</select>
+  <select id="template_city"
+    name="city" multiple="multiple">
+    <option value=""></option>
+  </select>
 
-	<select id="template_action"
-		name="action" multiple="multiple">
-	  <option value=""></option>
-	  {% for item in pages %}
-	  <option value="{{ item.id }}">
-	    {{ item }}
-	  </option>
-	  {% endfor %}
-	</select>
+  <select id="template_action"
+    name="action" multiple="multiple">
+    <option value=""></option>
+    {% for item in pages %}
+    <option value="{{ item.id }}">
+      {{ item }}
+    </option>
+    {% endfor %}
+  </select>
 
-	<select id="template_tag"
-		name="tag"
-		data-placeholder="Choose one or more tags"
-		multiple="multiple">
-	  {% for item in tags %}
-	  <option value="{{item.id}}">
-	    {{item.name}}
-	  </option>
-	  {% endfor %}
-	</select>
+  <select id="template_tag"
+    name="tag"
+    data-placeholder="Choose one or more tags"
+    multiple="multiple">
+    {% for item in tags %}
+    <option value="{{item.id}}">
+      {{item.name}}
+    </option>
+    {% endfor %}
+  </select>
 
-	<select id="template_organization"
-		name="organization"
-		multiple="multiple">
-	  {% for item in organizations %}
-	  <option value="{{item}}">
-	    {{item}}
-	  </option>
-	  {% endfor %}
-	</select>
+  <select id="template_organization"
+    name="organization"
+    multiple="multiple">
+    {% for item in organizations %}
+    <option value="{{item}}">
+      {{item}}
+    </option>
+    {% endfor %}
+  </select>
 
-	<select id="template_skills"
-		name="skills"
-		multiple="multiple">
-	  {% for item in skills %}
-	  <option value="{{item}}">
-	    {{item}}
-	  </option>
-	  {% endfor %}
-	</select>
+  <select id="template_skills"
+    name="skills"
+    multiple="multiple">
+    {% for item in skills %}
+    <option value="{{item}}">
+      {{item}}
+    </option>
+    {% endfor %}
+  </select>
 
       </div>
     </div>
