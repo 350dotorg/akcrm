@@ -1,17 +1,17 @@
 <div class="includeSet {{command}}">
   <div>
     <select class="paramset" 
-	    data-placeholder="Choose a search parameter"
-	    name="{{name}}" >
+            data-placeholder="Choose a search parameter"
+            name="{{name}}" >
       <option value=""></option>
       {% for category, items in fields.items %}
       <optgroup label="{{category}}">
-	{% for item in items %}
-	<option value="{{item.0}}" 
-		{% if item.2 == "disabled" %}disabled{% endif %}>
-	  {{item.1}}
-	</option>
-	{% endfor %}
+        {% for item in items %}
+        <option value="{{item.0}}" 
+                {% if item.2 == "disabled" %}disabled{% endif %}>
+          {{item.1}}
+        </option>
+        {% endfor %}
       </optgroup>
       {% endfor %}
     </select>
