@@ -42,6 +42,9 @@ QUERIES = {
         'query': "fields__value",
         'extra': {"fields__name": "engagement_level"},
         },
+    'language': {
+        'query': "lang__name",
+        },
     }
 
 @allow_http("GET")
@@ -99,6 +102,8 @@ def home(request):
 
     skills = CoreUserField.objects.using("ak").filter(name="skills").values_list("value", flat=True).distinct().order_by("value")
 
+    languages = [l.name for l in CoreLanguage.objects.using("ak").all().distinct().order_by("name")]
+
     fields = {
         'Location':
             (('country', 'Country'),
@@ -113,6 +118,7 @@ def home(request):
         'About':
             (('organization', "Organization"),
              ('skills', "Skills"),
+             ('language', "Preferred Language"),
              ),
         }
 

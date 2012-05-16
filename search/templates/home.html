@@ -235,6 +235,16 @@ console.log(anchor);
     {% endfor %}
   </select>
 
+  <select id="template_language"
+    name="language"
+    multiple="multiple">
+    {% for item in languages %}
+    <option value="{{item}}">
+      {{item}}
+    </option>
+    {% endfor %}
+  </select>
+
       </div>
     </div>
   </fieldset>

@@ -1,5 +1,13 @@
 from django.db import models
 
+
+class CoreLanguage(models.Model):
+    name = models.TextField()
+    class Meta:
+        db_table = u'core_language'
+        managed = False
+
+
 class CoreUser(models.Model):
     id = models.IntegerField(primary_key=True)
     created_at = models.DateTimeField()
@@ -22,7 +30,7 @@ class CoreUser(models.Model):
     plus4 = models.CharField(max_length=12)
     country = models.CharField(max_length=765)
     source = models.CharField(max_length=765)
-    #lang = models.ForeignKey(CoreLanguage, null=True, blank=True)
+    lang = models.ForeignKey(CoreLanguage, null=True, blank=True, related_name="users")
     rand_id = models.IntegerField()
     class Meta:
         db_table = u'core_user'
