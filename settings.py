@@ -104,6 +104,8 @@ INSTALLED_APPS = (
     'debug_toolbar',
     'djangohelpers',
     'akcrm.search',
+    'akcrm.cms',
+    'akcrm.crm',
 )
 
 # A sample logging configuration. The only tangible logging
