@@ -14,6 +14,7 @@ urlpatterns = patterns(
     url(r'^choices/pages/$', 'pages', name='choices_pages'),
 
     url(r'^search/$', 'search', name='search'),
+    url(r'^search/json/$', 'search_ajax', name='search_ajax'),
     url(r'^search/sql/$', 'search_raw_sql', name='search_raw_sql'),
     url(r'^search/akids/$', 'search_just_akids', name='search_just_akids'),
     url(r'^record/(?P<user_id>\d+)/$', 'detail', name='detail'),

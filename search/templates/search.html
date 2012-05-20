@@ -8,7 +8,10 @@
       $("#num_results").text($("tr.gradeA").length);
       $("table#ngot_data").dataTable({
         "bJQueryUI": true,
-        "sPaginationType": "full_numbers"
+        "sPaginationType": "full_numbers",
+        "bProcessing": true,
+        "bServerSide": true,
+        "sAjaxSource": "{% url search_ajax %}{{request.GET|qsify}}"
       });
     });
 
@@ -120,7 +123,7 @@
   {% endblock %}
 
   {% block content %}
-<h1>Found: <span id="num_results">{{ users|length }}</span> people</h1>
+<h1>Found: <span id="num_results">{{ users.count }}</span> people</h1>
 <div>
 Searched for people who match::
 <pre>{{ human_query }}</pre>

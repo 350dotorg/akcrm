@@ -11,6 +11,8 @@ import json
 import os.path
 import re
 
+from akcrm.utils.datatables import datatablize
+
 QUERIES = {
     'country': {
         'query': "country",
@@ -129,8 +131,21 @@ def home(request):
 def search(request):
     ctx = _search(request)
     users = ctx['users']
+
+    total_users_count = users.count()
+    users = users[:50]
+
+    return locals()
+
+def search_ajax(request):
+    ctx = _search(request)
+    users = ctx['users']
     
-    return ctx
+    return datatablize(request, users,
+                       ["last_name", "email", "phones", 
+                        "country", "state", "city", 
+                        "organization", "created_at"],
+                       jsonTemplatePath="search/datatables_results.json")
 
 def search_raw_sql(request):
     users = _search(request)['users']
