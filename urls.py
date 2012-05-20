@@ -13,6 +13,8 @@ urlpatterns = patterns(
     url(r'^choices/cities/$', 'cities', name='choices_cities'),
     url(r'^choices/pages/$', 'pages', name='choices_pages'),
 
+    url(r'^autocomplete/sources/$', 'sources', name='autocomplete_sources'),
+
     url(r'^search/$', 'search', name='search'),
     url(r'^search/sql/$', 'search_raw_sql', name='search_raw_sql'),
     url(r'^search/akids/$', 'search_just_akids', name='search_just_akids'),

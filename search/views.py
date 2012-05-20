@@ -1,5 +1,6 @@
 from actionkit import Client
 from django.conf import settings
+from django.db import connections
 from django.db.models import Count
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from djangohelpers import rendered_with, allow_http
@@ -10,6 +11,7 @@ import re
 import datetime
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
+from utils import clamp
 
 QUERIES = {
     'country': {
@@ -26,6 +28,9 @@ QUERIES = {
         },
     'action': {
         'query': "actions__page__id",
+        },
+    'source': {
+        'query': "actions__source",
         },
     'tag': {
         'query': "actions__page__pagetags__tag__id",
@@ -91,6 +96,35 @@ def pages(request):
 
 
 @allow_http("GET")
+def sources(request):
+    prefix = request.GET.get('q')
+    limit = request.GET.get('limit', '10')
+    try:
+        limit = int(limit)
+    except ValueError:
+        limit = 10
+    limit = clamp(limit, 1, 1000)
+    if prefix:
+        # executing raw query because distinct wasn't working
+        # i suspect it's because the id/source pair is always unique
+        cursor = connections['ak'].cursor()
+        prefix = prefix + '%'
+        cursor.execute("SELECT distinct source FROM core_action "
+                       "WHERE source LIKE %s ORDER BY source LIMIT %s",
+                       [prefix, limit])
+        sources = [row[0] for row in cursor.fetchall()]
+
+        # this is the distinct query that was failing
+        # actions = (CoreAction.objects
+        #            .using('ak')
+        #            .filter(source__startswith=prefix)
+        #            .distinct()[:10])
+    else:
+        sources = []
+    return HttpResponse(json.dumps(sources), content_type='application/json')
+
+
+@allow_http("GET")
 @rendered_with("home.html")
 def home(request):
     tags = CoreTag.objects.using("ak").all().order_by("name")
@@ -113,6 +147,7 @@ def home(request):
              ),
         'Activity':
             (('action', 'Took part in action'),
+             ('source', 'Source'),
              ('tag', 'Is tagged with'),
              ),
         'About':
