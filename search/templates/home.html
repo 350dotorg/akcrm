@@ -80,11 +80,14 @@ console.log(anchor);
             newEl.chosen();
           }
         } else {
-          newEl.autocomplete({
-              url: newEl.attr('autocomplete'),
-              remoteDataType: 'json',
-              minLength: 3
-              });
+          var autocompleteUrl = newEl.attr('autocomplete');
+          if (autocompleteUrl) {
+            newEl.autocomplete({
+                url: autocompleteUrl,
+                remoteDataType: 'json',
+                minLength: 3
+                });
+          }
         }
       });
     });
@@ -255,6 +258,20 @@ console.log(anchor);
     </option>
     {% endfor %}
   </select>
+
+  <input
+     type="text"
+     id="template_created_before"
+     name="created_before"
+     value="MM/DD/YYYY"
+     />
+
+  <input
+     type="text"
+     id="template_created_after"
+     name="created_after"
+     value="MM/DD/YYYY"
+     />
 
       </div>
     </div>

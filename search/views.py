@@ -13,6 +13,39 @@ import json
 import os.path
 import re
 
+def make_default_user_query(query_data, values):
+    """
+    given a query_data dict and values which come from the ui,
+    generate a dict that will be used for a user query
+
+    this default query is a within query, that optionally adds some
+    extra key/value data to the query dict
+    """
+
+    query = {}
+
+    query_str = query_data['query']
+    within = query_str + '__in'
+    query[within] = values
+
+    extra_info = query_data.get('extra')
+    if extra_info:
+        query.update(extra_info)
+
+    return query
+
+date_parse_re = re.compile('(\d\d)/(\d\d)/(\d\d\d\d)')
+def make_date_query(query_data, values):
+    date = values[0]
+    match = date_parse_re.search(date)
+    if match:
+        month, day, year = match.groups()
+        db_date = '%s-%s-%s' % (year, month, day)
+        return {query_data['query']: db_date}
+    else:
+        return {}
+
+
 QUERIES = {
     'country': {
         'query': "country",
@@ -50,13 +83,22 @@ QUERIES = {
     'language': {
         'query': "lang__name",
         },
+    'created_before': {
+        'query': "created_at__lte",
+        'query_fn': make_date_query,
+        },
+    'created_after': {
+        'query': "created_at__gte",
+        'query_fn': make_date_query,
+        },
     }
+
 
 @allow_http("GET")
 def countries(request):
     countries = CoreUser.objects.using("ak").values_list("country", flat=True).distinct().order_by("country")
     countries = [(i,i) for i in countries]
-    return HttpResponse(json.dumps(countries), 
+    return HttpResponse(json.dumps(countries),
                         content_type="application/json")
 
 @allow_http("GET")
@@ -146,6 +188,8 @@ def home(request):
             (('organization', "Organization"),
              ('skills', "Skills"),
              ('language', "Preferred Language"),
+             ('created_before', "Created Before"),
+             ('created_after', "Created After"),
              ),
         }
 
@@ -208,12 +252,8 @@ def _search(request):
             if len(possible_values) == 0:
                 continue
             query_data = QUERIES[item]
-            query_item = query_data['query']
-            query = {
-                query_item + "__in": possible_values
-            }
-            if query_data.get("extra"):
-                query.update(query_data['extra'])
+            make_query_fn = query_data.get('query_fn', make_default_user_query)
+            query = make_query_fn(query_data, possible_values)
             users = users.filter(**query)
             _human_query.append("%s is in %s" % (item, possible_values))
         all_user_queries.append(users)
