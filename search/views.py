@@ -105,20 +105,12 @@ def sources(request):
         limit = 10
     limit = clamp(limit, 1, 1000)
     if prefix:
-        # executing raw query because distinct wasn't working
-        # i suspect it's because the id/source pair is always unique
         cursor = connections['ak'].cursor()
         prefix = prefix + '%'
         cursor.execute("SELECT distinct source FROM core_action "
                        "WHERE source LIKE %s ORDER BY source LIMIT %s",
                        [prefix, limit])
         sources = [row[0] for row in cursor.fetchall()]
-
-        # this is the distinct query that was failing
-        # actions = (CoreAction.objects
-        #            .using('ak')
-        #            .filter(source__startswith=prefix)
-        #            .distinct()[:10])
     else:
         sources = []
     return HttpResponse(json.dumps(sources), content_type='application/json')
