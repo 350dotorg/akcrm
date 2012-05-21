@@ -9,6 +9,7 @@ from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
 from utils import clamp
 import datetime
+import dateutil.parser
 import json
 import os.path
 import re
@@ -34,17 +35,10 @@ def make_default_user_query(query_data, values):
 
     return query
 
-date_parse_re = re.compile('(\d\d)/(\d\d)/(\d\d\d\d)')
 def make_date_query(query_data, values):
     date = values[0]
-    match = date_parse_re.search(date)
-    if match:
-        month, day, year = match.groups()
-        db_date = '%s-%s-%s' % (year, month, day)
-        return {query_data['query']: db_date}
-    else:
-        return {}
-
+    match = dateutil.parser.parse(date)
+    return {query_data['query']: match}
 
 QUERIES = {
     'country': {
