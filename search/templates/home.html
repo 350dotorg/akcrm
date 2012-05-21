@@ -80,8 +80,11 @@ console.log(anchor);
             newEl.chosen();
           }
         } else {
-          newEl.autocomplete(newEl.data("autocomplete_url"), {delay:50, minChars:0}).focus(function() { newEl.data("autocompleter").fetch() });
-
+          newEl.autocomplete({
+              url: newEl.attr('autocomplete'),
+              remoteDataType: 'json',
+              minLength: 3
+              });
         }
       });
     });
@@ -203,6 +206,14 @@ console.log(anchor);
     </option>
     {% endfor %}
   </select>
+
+  <input
+     id="template_source"
+     type="text"
+     name="source"
+     multiple="multiple"
+     autocomplete="{% url autocomplete_sources %}"
+     />
 
   <select id="template_tag"
     name="tag"
