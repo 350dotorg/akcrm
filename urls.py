@@ -16,6 +16,8 @@ urlpatterns = patterns(
     url(r'^autocomplete/sources/$', 'sources', name='autocomplete_sources'),
 
     url(r'^search/$', 'search', name='search'),
+    url(r'^search/json/$', 'search_json', name='search_json'),
+
     url(r'^search/sql/$', 'search_raw_sql', name='search_raw_sql'),
     url(r'^search/akids/$', 'search_just_akids', name='search_just_akids'),
     url(r'^record/(?P<user_id>\d+)/$', 'detail', name='detail'),

@@ -8,10 +8,28 @@
       $("#num_results").text($("tr.gradeA").length);
       $("table#ngot_data").dataTable({
         "bJQueryUI": true,
+        "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+          nRow.class = "gradeA";
+          return nRow;
+        },
         "sPaginationType": "full_numbers"
       });
     });
-
+/*
+    $.getJSON("{% url search_json %}{{ request.GET|qsify }}", function(data) {
+      for( var i=0; i<data.length; ++i ) {
+        var user = data[i];
+        if( !$("tr#user_" + user.id).length ) {
+          $("table#ngot_data").dataTable().fnAddData( [
+            "<a class='expand' href='" + user.url + "'>" + user.name + "</a>",
+            "<a class='expand' href='" + user.url + "'>" + user.email + "</a>",
+            user.phone,
+	    user.country, user.state, user.city, user.organization, user.created_at
+	  ]);
+        }
+      }
+    });
+*/
     $(".expand_details h4.heading a").live("click", function() {
       $(this).closest("div").find("ol li, ol li ul").show(); return false;
     });
@@ -143,7 +161,7 @@ Searched for people who match::
   <tbody>
   {% for user in users %}
   {% ifchanged user %}
-  <tr class="gradeA">
+  <tr id="user_{{ user.id }}" class="gradeA">
     <td><a class="expand" href="{{ user.get_absolute_url }}">
 	{{ user|default:"" }}</a></td>
     <td><a class="expand" href="{{ user.get_absolute_url }}">

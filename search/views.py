@@ -111,8 +111,15 @@ def regions(request):
 
 @allow_http("GET")
 def states(request):
-    states = CoreUser.objects.using("ak").values_list("state", flat=True).distinct().order_by("state")
-    states = [(i,i) for i in states]
+    countries = request.GET.getlist("country")
+    raw_states = CoreUser.objects.using("ak").filter(
+        country__in=countries).values(
+        "country", "state").distinct().order_by("country", "state")
+    states = {}
+    for state in raw_states:
+        if state['country'] not in states:
+            states[state['country']] = []
+        states[state['country']].append(state['state'])
     return HttpResponse(json.dumps(states), 
                         content_type="application/json")
 
@@ -169,7 +176,6 @@ def home(request):
     fields = {
         'Location':
             (('country', 'Country'),
-             ('region', 'Region', 'disabled'),
              ('state', 'State', 'disabled'),
              ('city', 'City', 'disabled'),
              ),
@@ -196,6 +202,28 @@ def search(request):
     users = ctx['users']
 
     return ctx
+
+@allow_http("GET")
+def search_json(request):
+    ctx = _search(request)
+    users = ctx['users']
+    
+    users_json = []
+    for user in users:
+        users_json.append(dict(
+                id=user.id,
+                url=user.get_absolute_url(),
+                name=unicode(user),
+                email=user.email,
+                phone=unicode(user.phone() or ''),
+                country=user.country,
+                state=user.state,
+                city=user.city,
+                organization=user.organization(),
+                created_at=user.created_at.strftime("%m/%d/%Y"),
+                ))
+    users_json = json.dumps(users_json)
+    return HttpResponse(users_json, content_type="application/json")
 
 def search_raw_sql(request):
     users = _search(request)['users']
