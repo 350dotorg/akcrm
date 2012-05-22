@@ -75,7 +75,7 @@ QUERIES = {
         'extra': {"fields__name": "engagement_level"},
         },
     'language': {
-        'query': "lang__name",
+        'query': "lang__id",
         },
     'created_before': {
         'query': "created_at__lte",
@@ -164,7 +164,7 @@ def home(request):
 
     skills = CoreUserField.objects.using("ak").filter(name="skills").values_list("value", flat=True).distinct().order_by("value")
 
-    languages = [l.name for l in CoreLanguage.objects.using("ak").all().distinct().order_by("name")]
+    languages = CoreLanguage.objects.using("ak").all().distinct().order_by("name")
 
     fields = {
         'Location':
@@ -194,7 +194,7 @@ def home(request):
 def search(request):
     ctx = _search(request)
     users = ctx['users']
-    
+
     return ctx
 
 def search_raw_sql(request):
