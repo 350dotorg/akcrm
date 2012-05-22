@@ -57,7 +57,7 @@ QUERIES = {
         'query': "actions__page__id",
         },
     'source': {
-        'query': "actions__source",
+        'query': "source",
         },
     'tag': {
         'query': "actions__page__pagetags__tag__id",
@@ -150,7 +150,7 @@ def sources(request):
     if prefix:
         cursor = connections['ak'].cursor()
         prefix = prefix + '%'
-        cursor.execute("SELECT distinct source FROM core_action "
+        cursor.execute("SELECT distinct source FROM core_user "
                        "WHERE source LIKE %s ORDER BY source LIMIT %s",
                        [prefix, limit])
         sources = [row[0] for row in cursor.fetchall()]
