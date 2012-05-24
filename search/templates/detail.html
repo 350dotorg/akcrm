@@ -148,6 +148,7 @@
   <div class="span12">
     <ul class="nav nav-tabs">
       <li class="active"><a href="#action-history" data-toggle="tab">Action History</a></li>
+      <li><a href="#contact-history" data-toggle="tab">Contact History</a></li>
       <li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
       <li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
     </ul>
@@ -174,6 +175,43 @@
 	      </td>
 	      <td>
 		{{ action.page.type }}
+	      </td>
+	    </tr>
+	    {% endfor %}
+	  </tbody>
+	</table>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="contact-history">
+      <div class="datatables_wrapper">
+	<table class="display datatable" id="contact_data">
+	  <thead>
+	    <tr>
+	      <th>On</th>
+	      <th>By</th>
+	      <th>Type</th>
+	      <th>Result</th>
+	      <th>Notes</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    {% for contact in contact_history %}
+	    <tr>
+	      <td>
+		{{ contact.completed_at|date }} 
+	      </td>
+	      <td>
+		{{ contact.user }}
+	      </td>
+	      <td>
+		{{ contact.contact_type_str }}
+	      </td>
+	      <td>
+		{{ contact.result_str }}
+	      </td>
+	      <td>
+		{{ contact.notes }}
 	      </td>
 	    </tr>
 	    {% endfor %}

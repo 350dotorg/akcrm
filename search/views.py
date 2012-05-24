@@ -14,6 +14,8 @@ import json
 import os.path
 import re
 
+from akcrm.crm.models import ContactRecord
+
 def make_default_user_query(query_data, values):
     """
     given a query_data dict and values which come from the ui,
@@ -374,6 +376,8 @@ def _detail(request, user_id):
     clicks = clicks_by_user(agent)
     opens = opens_by_user(agent)
     sends = CoreUserMailing.objects.using("ak").filter(user=agent).order_by("-created_at").select_related("subject")
+
+    contact_history = ContactRecord.objects.filter(akid=user_id).order_by("-completed_at")
 
     query = request.session.get('akcrm.query')
 
