@@ -1,0 +1,45 @@
+{% for error in form.non_field_errors %}
+<div class="form_error">{{ error }}</div>
+{% endfor %}
+<div class="row">
+<div class="span4">
+  {% for field in form.visible_fields %}
+  {% if field.field.widget.attrs.sidebar != "sidebar" %}
+  <p class="form_row {% if field.errors %}form_error{% endif %} row_{{ field.auto_id }} {{field.field.widget.attrs.class }}">
+    {% if "CheckboxInput" in field.field.widget|pprint %}
+    {{ field }}{{ field.label_tag }}
+    {% else %}
+    {{ field.label_tag }}{{ field }}
+    {% endif %}
+    {% for error in field.errors %}
+    <label class="form_error" for="{{ field.auto_id }}">{{ error|escape }}</label>
+    {% endfor %}
+    <div class="form_help_text">{{ field.help_text }}</div>
+  </p>
+  {% endif %}
+  {% endfor %}
+</div>
+<div class="span7">
+  {% for field in form.visible_fields %}
+  {% if field.field.widget.attrs.sidebar == "sidebar" %}
+  <p class="form_row {% if field.errors %}form_error{% endif %} row_{{ field.auto_id }} {{field.field.widget.attrs.class }}">
+    {% if "CheckboxInput" in field.field.widget|pprint %}
+    {{ field }}{{ field.label_tag }}
+    {% else %}
+    {{ field.label_tag }}{{ field }}
+    {% endif %}
+    {% for error in field.errors %}
+    <label class="form_error" for="{{ field.auto_id }}">{{ error|escape }}</label>
+    {% endfor %}
+    <div class="form_help_text">{{ field.help_text }}</div>
+  </p>
+  {% endif %}
+  {% endfor %}
+</div>
+</div>
+
+<div class="hidden">
+    {% for field in form.hidden_fields %}
+        {{ field }}
+    {% endfor %}
+</div>
