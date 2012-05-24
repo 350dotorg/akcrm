@@ -7,14 +7,15 @@ from djangohelpers import rendered_with, allow_http
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
-from utils import clamp
 import datetime
 import dateutil.parser
 import json
 import os.path
 import re
 
+from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
+from akcrm.search.utils import clamp
 
 def make_default_user_query(query_data, values):
     """
@@ -378,6 +379,10 @@ def _detail(request, user_id):
     sends = CoreUserMailing.objects.using("ak").filter(user=agent).order_by("-created_at").select_related("subject")
 
     contact_history = ContactRecord.objects.filter(akid=user_id).order_by("-completed_at")
+    contact_form = ContactForm(initial={
+            'akid': user_id,
+            'user': request.user,
+            })
 
     query = request.session.get('akcrm.query')
 

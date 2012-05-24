@@ -33,6 +33,11 @@ urlpatterns = patterns(
     )
 
 urlpatterns += patterns(
+    'akcrm.crm.views',
+    url(r'^contacts/(?P<akid>\d+)/$', 'contacts_for_user', name='contacts_for_user'),
+    )
+
+urlpatterns += patterns(
     'django.contrib.auth.views',
     (r'^accounts/login/$', 'login'),
     (r'^accounts/logout/$', 'logout'),

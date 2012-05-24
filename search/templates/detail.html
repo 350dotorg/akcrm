@@ -184,6 +184,7 @@
     </div>
 
     <div class="tab-pane" id="contact-history">
+      <p><a href="#contact_form">Add New Contact Record</a></p>
       <div class="datatables_wrapper">
 	<table class="display datatable" id="contact_data">
 	  <thead>
@@ -199,7 +200,7 @@
 	    {% for contact in contact_history %}
 	    <tr>
 	      <td>
-		{{ contact.completed_at|date }} 
+		{{ contact.completed_at|date }}, {{ contact.completed_at|time }}
 	      </td>
 	      <td>
 		{{ contact.user }}
@@ -217,6 +218,17 @@
 	    {% endfor %}
 	  </tbody>
 	</table>
+      </div>
+      <br /><br />
+      <div id="contact_form">
+	<h3>Add New Contact Record</h3>
+	<form method="POST" action="{% url contacts_for_user agent.id %}">
+	  {% csrf_token %}
+	  {% with contact_form as form %}
+	  {% include "_form.html" %}
+	  {% endwith %}
+	  <input class="btn" type="submit" />
+	</form>
       </div>
     </div>
 
