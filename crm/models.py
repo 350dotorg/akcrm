@@ -10,7 +10,10 @@ class ContactRecord(models.Model):
         )
     contact_type = models.CharField(max_length=100, choices=CONTACT_TYPE_CHOICES)
 
-    akid = models.IntegerField()
+    def contact_type_str(self):
+        return dict(self.CONTACT_TYPE_CHOICES)[self.contact_type]
+
+    akid = models.IntegerField(db_index=True)
     user = models.ForeignKey("auth.User")
     
     completed_at = models.DateTimeField(auto_now_add=True)
@@ -42,5 +45,5 @@ class ContactRecord(models.Model):
     notes = models.TextField(null=True, blank=True)
 
     def __unicode__(self):
-        return u" ".join((self.user, self.akid, self.type))
+        return u" ".join((self.user.username, str(self.akid), self.contact_type))
 
