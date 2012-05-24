@@ -48,9 +48,9 @@ console.log(anchor);
         newEl.show();
         newElWrapper.appendTo(that);
         if( newEl[0].tagName == "SELECT" ) {
-          if( newEl.data("filtertype") == "region" ) {
+          if( newEl.data("filtertype") == "state" ) {
             newEl.bind("akcrm:findfields", function() {
-              var data = newEl.closest(".and-group").find("select[name$=_country]").data("available_regions");
+              var data = newEl.closest(".and-group").find("select[name$=_country]").data("available_states");
               newEl.html("<option value=''></option>");
               $.each(data, function(i, n) { 
                 var group = $("<optgroup>").attr("label", i);
@@ -67,12 +67,12 @@ console.log(anchor);
             newEl.chosen().change(function() {
               var countries = newEl.val();
               if( countries.length ) {
-                newEl.closest(".and-group").find("option[value=region]").removeAttr("disabled");
+                newEl.closest(".and-group").find("option[value=state]").removeAttr("disabled");
                 var country_string = "country=" + countries.join("&country=");
-                $.getJSON("{% url choices_regions %}?" + country_string, 
+                $.getJSON("{% url choices_states %}?" + country_string, 
                   function(data) {
-                    newEl.data("available_regions", data);
-                    newEl.closest(".and-group").find("select[name$=_region]").trigger("akcrm:findfields");
+                    newEl.data("available_states", data);
+                    newEl.closest(".and-group").find("select[name$=_state]").trigger("akcrm:findfields");
                 });
               }
             });
@@ -80,8 +80,14 @@ console.log(anchor);
             newEl.chosen();
           }
         } else {
-          newEl.autocomplete(newEl.data("autocomplete_url"), {delay:50, minChars:0}).focus(function() { newEl.data("autocompleter").fetch() });
-
+          var autocompleteUrl = newEl.attr('autocomplete');
+          if (autocompleteUrl) {
+            newEl.autocomplete({
+                url: autocompleteUrl,
+                remoteDataType: 'json',
+                minLength: 3
+                });
+          }
         }
       });
     });
@@ -179,13 +185,8 @@ console.log(anchor);
           <option value="{{ country }}">{{ country }}</option>
           {% endfor %}
         </select>
-        <select id="template_region"
-                name="region" data-filtertype="region" multiple="multiple">
-    <option value=""></option>
-  </select>
-
-  <select id="template_state"
-    name="state" multiple="multiple">
+        <select id="template_state"
+                name="state" data-filtertype="state" multiple="multiple">
     <option value=""></option>
   </select>
 
@@ -203,6 +204,14 @@ console.log(anchor);
     </option>
     {% endfor %}
   </select>
+
+  <input
+     id="template_source"
+     type="text"
+     name="source"
+     multiple="multiple"
+     autocomplete="{% url autocomplete_sources %}"
+     />
 
   <select id="template_tag"
     name="tag"
@@ -238,12 +247,26 @@ console.log(anchor);
   <select id="template_language"
     name="language"
     multiple="multiple">
-    {% for item in languages %}
-    <option value="{{item}}">
-      {{item}}
+    {% for lang in languages %}
+    <option value="{{lang.id}}">
+      {{lang.name}}
     </option>
     {% endfor %}
   </select>
+
+  <input
+     type="text"
+     id="template_created_before"
+     name="created_before"
+     placeholder="MM/DD/YYYY"
+     />
+
+  <input
+     type="text"
+     id="template_created_after"
+     name="created_after"
+     placeholder="MM/DD/YYYY"
+     />
 
       </div>
     </div>

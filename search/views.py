@@ -1,15 +1,44 @@
 from actionkit import Client
-from django.conf import settings
-from django.db.models import Count
-from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
-from djangohelpers import rendered_with, allow_http
 from actionkit.models import *
+from django.conf import settings
+from django.db import connections
+from django.db.models import Count
+from djangohelpers import rendered_with, allow_http
+from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
+from django.template.defaultfilters import date
+from django.utils.simplejson import JSONEncoder
+from utils import clamp
+import datetime
+import dateutil.parser
 import json
 import os.path
 import re
-import datetime
-from django.template.defaultfilters import date
-from django.utils.simplejson import JSONEncoder
+
+def make_default_user_query(query_data, values):
+    """
+    given a query_data dict and values which come from the ui,
+    generate a dict that will be used for a user query
+
+    this default query is a within query, that optionally adds some
+    extra key/value data to the query dict
+    """
+
+    query = {}
+
+    query_str = query_data['query']
+    within = query_str + '__in'
+    query[within] = values
+
+    extra_info = query_data.get('extra')
+    if extra_info:
+        query.update(extra_info)
+
+    return query
+
+def make_date_query(query_data, values):
+    date = values[0]
+    match = dateutil.parser.parse(date)
+    return {query_data['query']: match}
 
 QUERIES = {
     'country': {
@@ -27,6 +56,9 @@ QUERIES = {
     'action': {
         'query': "actions__page__id",
         },
+    'source': {
+        'query': "source",
+        },
     'tag': {
         'query': "actions__page__pagetags__tag__id",
         },
@@ -43,15 +75,24 @@ QUERIES = {
         'extra': {"fields__name": "engagement_level"},
         },
     'language': {
-        'query': "lang__name",
+        'query': "lang__id",
+        },
+    'created_before': {
+        'query': "created_at__lte",
+        'query_fn': make_date_query,
+        },
+    'created_after': {
+        'query': "created_at__gte",
+        'query_fn': make_date_query,
         },
     }
+
 
 @allow_http("GET")
 def countries(request):
     countries = CoreUser.objects.using("ak").values_list("country", flat=True).distinct().order_by("country")
     countries = [(i,i) for i in countries]
-    return HttpResponse(json.dumps(countries), 
+    return HttpResponse(json.dumps(countries),
                         content_type="application/json")
 
 @allow_http("GET")
@@ -70,8 +111,15 @@ def regions(request):
 
 @allow_http("GET")
 def states(request):
-    states = CoreUser.objects.using("ak").values_list("state", flat=True).distinct().order_by("state")
-    states = [(i,i) for i in states]
+    countries = request.GET.getlist("country")
+    raw_states = CoreUser.objects.using("ak").filter(
+        country__in=countries).values(
+        "country", "state").distinct().order_by("country", "state")
+    states = {}
+    for state in raw_states:
+        if state['country'] not in states:
+            states[state['country']] = []
+        states[state['country']].append(state['state'])
     return HttpResponse(json.dumps(states), 
                         content_type="application/json")
 
@@ -91,6 +139,27 @@ def pages(request):
 
 
 @allow_http("GET")
+def sources(request):
+    prefix = request.GET.get('q')
+    limit = request.GET.get('limit', '10')
+    try:
+        limit = int(limit)
+    except ValueError:
+        limit = 10
+    limit = clamp(limit, 1, 1000)
+    if prefix:
+        cursor = connections['ak'].cursor()
+        prefix = prefix + '%'
+        cursor.execute("SELECT distinct source FROM core_user "
+                       "WHERE source LIKE %s ORDER BY source LIMIT %s",
+                       [prefix, limit])
+        sources = [row[0] for row in cursor.fetchall()]
+    else:
+        sources = []
+    return HttpResponse(json.dumps(sources), content_type='application/json')
+
+
+@allow_http("GET")
 @rendered_with("home.html")
 def home(request):
     tags = CoreTag.objects.using("ak").all().order_by("name")
@@ -102,23 +171,25 @@ def home(request):
 
     skills = CoreUserField.objects.using("ak").filter(name="skills").values_list("value", flat=True).distinct().order_by("value")
 
-    languages = [l.name for l in CoreLanguage.objects.using("ak").all().distinct().order_by("name")]
+    languages = CoreLanguage.objects.using("ak").all().distinct().order_by("name")
 
     fields = {
         'Location':
             (('country', 'Country'),
-             ('region', 'Region', 'disabled'),
              ('state', 'State', 'disabled'),
              ('city', 'City', 'disabled'),
              ),
         'Activity':
             (('action', 'Took part in action'),
+             ('source', 'Source'),
              ('tag', 'Is tagged with'),
              ),
         'About':
             (('organization', "Organization"),
              ('skills', "Skills"),
              ('language', "Preferred Language"),
+             ('created_before', "Created Before"),
+             ('created_after', "Created After"),
              ),
         }
 
@@ -129,8 +200,30 @@ def home(request):
 def search(request):
     ctx = _search(request)
     users = ctx['users']
-    
+
     return ctx
+
+@allow_http("GET")
+def search_json(request):
+    ctx = _search(request)
+    users = ctx['users']
+    
+    users_json = []
+    for user in users:
+        users_json.append(dict(
+                id=user.id,
+                url=user.get_absolute_url(),
+                name=unicode(user),
+                email=user.email,
+                phone=unicode(user.phone() or ''),
+                country=user.country,
+                state=user.state,
+                city=user.city,
+                organization=user.organization(),
+                created_at=user.created_at.strftime("%m/%d/%Y"),
+                ))
+    users_json = json.dumps(users_json)
+    return HttpResponse(users_json, content_type="application/json")
 
 def search_raw_sql(request):
     users = _search(request)['users']
@@ -181,12 +274,8 @@ def _search(request):
             if len(possible_values) == 0:
                 continue
             query_data = QUERIES[item]
-            query_item = query_data['query']
-            query = {
-                query_item + "__in": possible_values
-            }
-            if query_data.get("extra"):
-                query.update(query_data['extra'])
+            make_query_fn = query_data.get('query_fn', make_default_user_query)
+            query = make_query_fn(query_data, possible_values)
             users = users.filter(**query)
             _human_query.append("%s is in %s" % (item, possible_values))
         all_user_queries.append(users)
