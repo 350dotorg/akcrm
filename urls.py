@@ -38,6 +38,11 @@ urlpatterns += patterns(
     )
 
 urlpatterns += patterns(
+    'akcrm.cms.views',
+    url(r'^tags/$', 'allowed_tags', name='allowed_tags'),
+    )
+
+urlpatterns += patterns(
     'django.contrib.auth.views',
     (r'^accounts/login/$', 'login'),
     (r'^accounts/logout/$', 'logout'),

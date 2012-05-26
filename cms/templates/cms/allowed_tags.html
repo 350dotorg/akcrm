@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script type="text/javascript" 
+	src="/static/chosen/chosen.jquery.js"></script>
+<link rel="stylesheet" type="text/css" 
+      href="/static/jquery/jquery.autocomplete.css" />
+<script type="text/javascript" 
+	src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
+<link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
+<script type="text/javascript">
+  $(window).load(function() {
+    return;
+  });
+</script>
+{% endblock %}
+
+{% block nav %}
+<li><a href="/">New Search</a></li>
+<li class="active"><a href="{% url allowed_tags %}">Manage Tags</a></li>
+{% endblock %}
+
+{% block content %}
+<h1>Manage Tags</h1>
+
+<div class="span12">
+  {% for tag in allowed_tags %}
+  <p>{{ tag.name }}</p>
+  {% endfor %}
+  
+  <h2>Add a tag</h2>
+  <form method="POST" action="{% url allowed_tags %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <input type="submit" class="btn" />
+  </form>
+
+</div>
+{% endblock %}
+
