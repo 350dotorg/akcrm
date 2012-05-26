@@ -1,5 +1,6 @@
 from actionkit import Client
 from actionkit.models import *
+from collections import namedtuple
 from django.conf import settings
 from django.db import connections
 from django.db.models import Count
@@ -13,6 +14,7 @@ import json
 import os.path
 import re
 
+from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
 from akcrm.search.utils import clamp
@@ -413,6 +415,21 @@ def _detail(request, user_id):
             })
 
     query = request.session.get('akcrm.query')
+
+    allowed_tags = dict([(t.ak_tag_id, t) for t in AllowedTag.objects.all()])
+    _agent_tags = CoreTag.objects.using("ak").filter(
+        corepagetag__page__coreaction__user=agent).values("name", "id", "corepagetag__page_id")
+
+    agent_tags = []
+    AgentTag = namedtuple("AgentTag", "name ak_tag_id editable allowed_tag_id ")
+    for tag in _agent_tags:
+        editable = False
+        allowed_tag_id = None
+        if (tag['id'] in allowed_tags
+            and allowed_tags[tag['id']].ak_page_id == tag['corepagetag__page_id']):
+            editable = True
+            allowed_tag_id = allowed_tags[tag['id']].id
+        agent_tags.append(AgentTag(tag['name'], tag['id'], editable, allowed_tag_id))
 
     return locals()
 

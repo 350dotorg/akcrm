@@ -37,6 +37,8 @@
       saveSkills();
       return false;
     });
+
+
   </script>
   <script type="text/javascript">
     $(window).load(function() {
@@ -105,6 +107,21 @@
      {% endfor %}
    </form>
  </p>
+
+ <p>
+   <strong>Tags:</strong>
+   {% for tag in agent_tags %}
+   {% if tag.editable %}
+   <form method="POST" action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
+     {{ tag.name }}
+     <a href="#" class="icon-minus-sign"></a>
+   </form>
+   {% else %}
+   {{ tag }}
+   {% endif %}
+   {% endfor %}
+ </p>
+
 </div>
 <div class="span6">
   {% with action=actions.0 order=orders.0 click=clicks.0 open=opens.0 send=sends.0 %}
