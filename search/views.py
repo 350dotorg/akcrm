@@ -434,6 +434,25 @@ def _detail(request, user_id):
             allowed_tag_id = allowed_tags[tag['id']].id
         agent_tags.append(AgentTag(tag['name'], tag['id'], editable, allowed_tag_id))
 
+    # The list of already-used tags may contain duplicates.
+    # We need to filter out duplicates, and if there is an "editable" copy of the tag
+    # as well as an "uneditable" copy, we need to discard the editable one.
+    _agent_tags = {}
+    for tag in agent_tags:
+        _agent_tags.setdefault(tag.name, [])
+        if tag.editable:
+            _agent_tags[tag.name].append(tag)
+        else:
+            _agent_tags[tag.name].insert(0, tag)
+    agent_tags = (copies[0] for copies in _agent_tags.values())
+
+    # We also need to filter out the "special tag-page marker tag" 
+    # from the list -- unless it too is editable!
+    agent_tags = [tag for tag in agent_tags
+                  if (tag.ak_tag_id != settings.AKTIVATOR_TAG_PAGE_TAG_ID
+                      or tag.editable)]
+
+    # Then, we need to filter out already-used tags from the list of addable tags.
     _agent_tags = [tag.name for tag in agent_tags]
     allowed_tags = [tag for tag in _allowed_tags if tag.tag_name not in _agent_tags]
 
