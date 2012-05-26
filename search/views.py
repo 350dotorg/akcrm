@@ -12,6 +12,7 @@ import dateutil.parser
 import json
 import os.path
 import re
+from operator import itemgetter
 
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
@@ -390,6 +391,7 @@ def detail_json(request, user_id):
 
     agent = ctx['agent']
     ctx['sends'] = _mailing_history(request, agent).values()
+    ctx['sends'] = sorted(ctx['sends'], key=itemgetter("mailed_at"), reverse=True)
     try:
         ctx['latest_send'] = ctx['sends'][0]
     except IndexError:
