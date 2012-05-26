@@ -7,7 +7,7 @@ from django.db import connections
 from django.db.models import Count
 from djangohelpers import rendered_with, allow_http
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
 import datetime
@@ -462,7 +462,9 @@ def _detail(request, user_id):
 def add_user_tag(request, user_id, tag_id):
     allowed_tag = get_object_or_404(AllowedTag, id=tag_id)
     action = rest.create_action(allowed_tag.ak_page_id, user_id)
-    return HttpResponse(action['action']['id'])
+    if request.is_ajax():
+        return HttpResponse(action['action']['id'])
+    return redirect("detail", user_id)
 
 @allow_http("POST")
 def remove_user_tag(request, user_id, tag_id):
@@ -471,7 +473,9 @@ def remove_user_tag(request, user_id, tag_id):
                                page__id=allowed_tag.ak_page_id,
                                user__id=user_id)
     rest.delete_action(action.id)
-    return HttpResponse(action.id)
+    if request.is_ajax():
+        return HttpResponse(action.id)
+    return redirect("detail", user_id)
 
 def _mailing_history(request, agent):
     _sends = mailings_by_user(agent)
