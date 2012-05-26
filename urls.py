@@ -26,6 +26,11 @@ urlpatterns = patterns(
     url(r'^record/(?P<user_id>\d+)/skills/$', 'edit_skills', 
         name='edit_skills'),
 
+    url(r'^record/(?P<user_id>\d+)/tags/(?P<tag_id>\d+)/add/$', 'add_user_tag',
+        name='add_user_tag'),
+    url(r'^record/(?P<user_id>\d+)/tags/(?P<tag_id>\d+)/remove/$', 'remove_user_tag',
+        name='remove_user_tag'),
+    
     url(r'^record/(?P<user_id>\d+)/mailing_history/$', 
         'mailing_history', name='mailing_history'),
 

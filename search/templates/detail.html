@@ -113,13 +113,23 @@
    {% for tag in agent_tags %}
    {% if tag.editable %}
    <form method="POST" action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
-     {{ tag.name }}
-     <a href="#" class="icon-minus-sign"></a>
+     {% csrf_token %}
+     <input type="submit" class="btn" value="Remove tag: {{ tag.name }}" />
    </form>
    {% else %}
-   {{ tag }}
+   {{ tag.name }}
    {% endif %}
    {% endfor %}
+   
+   {% for obj in allowed_tags.items %}
+   {% with obj.1 as tag %}
+   <form method="POST" action="{% url add_user_tag agent.id tag.id %}">
+     {% csrf_token %}
+     <input type="submit" class="btn" value="Add tag: {{ tag.tag_name }}" />
+   </form>
+   {% endwith %}
+   {% endfor %}
+
  </p>
 
 </div>
