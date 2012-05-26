@@ -16,6 +16,8 @@ import re
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
 from akcrm.search.utils import clamp
+from akcrm.search.utils import latlon_bbox
+from akcrm.search.utils import zipcode_to_latlon
 
 def make_default_user_query(query_data, values):
     """
@@ -181,6 +183,7 @@ def home(request):
             (('country', 'Country'),
              ('state', 'State', 'disabled'),
              ('city', 'City', 'disabled'),
+             ('zipcode', 'Zip Code'),
              ),
         'Activity':
             (('action', 'Took part in action'),
@@ -281,8 +284,37 @@ def _search(request):
             query = make_query_fn(query_data, possible_values)
             users = users.filter(**query)
             _human_query.append("%s is in %s" % (item, possible_values))
+
+        # XXX special cased zip code and distance
+        # these two fields are together, if we have another case like this
+        # we should probably formalize this
+        zipcode = request.GET.get('zipcode', '')
+        distance = request.GET.get('distance', '')
+        if zipcode and distance:
+            # handle errors?
+            zipcode = int(zipcode)
+            distance = float(distance)
+            assert distance > 0, "Bad distance"
+            latlon = zipcode_to_latlon(zipcode)
+            assert latlon is not None, "No location found for: %s" % zipcode
+            lat, lon = latlon
+            bbox = latlon_bbox(lat, lon, distance)
+            assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
+            lat1, lat2, lon1, lon2 = bbox
+            users = users.filter(
+                location__latitude__range=(lat1, lat2),
+                location__longitude__range=(lon1, lon2),
+                # location__latitude__gte=lat1,
+                # location__latitude__lte=lat2,
+                # location__longitude__gte=lon1,
+                # location__longitude__lte=lon2,
+                )
+            _human_query.append("within %s miles of %s" % (distance, zipcode))
+
+
         all_user_queries.append(users)
         human_query.append("(%s)" % " and ".join(_human_query))
+
 
     human_query = "\n or ".join(human_query)
     users = None

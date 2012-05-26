@@ -79,6 +79,10 @@ console.log(anchor);
           } else {
             newEl.chosen();
           }
+        } else if (val === "zipcode") {
+          newEl.attr('name', 'zipcode');
+          var distanceEl = $('#template_distance').clone();
+          newElWrapper.append(distanceEl);
         } else {
           var autocompleteUrl = newEl.attr('autocomplete');
           if (autocompleteUrl) {
@@ -266,6 +270,21 @@ console.log(anchor);
      id="template_created_after"
      name="created_after"
      placeholder="MM/DD/YYYY"
+     />
+
+  <input
+     id="template_zipcode"
+     type="text"
+     name="zipcode"
+     placeholder="Zip Code"
+     />
+
+  <input
+     id="template_distance"
+     type="text"
+     name="distance"
+     style="margin-left: 10px"
+     placeholder="Distance in miles"
      />
 
       </div>
