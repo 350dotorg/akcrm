@@ -304,10 +304,6 @@ def _search(request):
             users = users.filter(
                 location__latitude__range=(lat1, lat2),
                 location__longitude__range=(lon1, lon2),
-                # location__latitude__gte=lat1,
-                # location__latitude__lte=lat2,
-                # location__longitude__gte=lon1,
-                # location__longitude__lte=lon2,
                 )
             _human_query.append("within %s miles of %s" % (distance, zipcode))
 
