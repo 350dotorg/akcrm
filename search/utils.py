@@ -11,10 +11,11 @@ def latlon_bbox(lat, lon, d):
     """
     calculates a latlon bbox given a lat/lon and a distance d in miles
     """
-    lon1 = lon - d / abs(cos(radians(lat)) * 69)
-    lon2 = lon + d / abs(cos(radians(lat)) * 69)
-    lat1 = lat - (d / 69)
-    lat2 = lat + (d / 69)
+    APPROX_MILES_PER_DEGREE = 69
+    lon1 = lon - d / abs(cos(radians(lat)) * APPROX_MILES_PER_DEGREE)
+    lon2 = lon + d / abs(cos(radians(lat)) * APPROX_MILES_PER_DEGREE)
+    lat1 = lat - (d / APPROX_MILES_PER_DEGREE)
+    lat2 = lat + (d / APPROX_MILES_PER_DEGREE)
     return (lat1, lat2, lon1, lon2)
 
 def zipcode_to_latlon(zipcode):
