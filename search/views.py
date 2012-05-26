@@ -418,7 +418,8 @@ def _detail(request, user_id):
 
     query = request.session.get('akcrm.query')
 
-    allowed_tags = dict([(t.ak_tag_id, t) for t in AllowedTag.objects.all()])
+    _allowed_tags = AllowedTag.objects.all()
+    allowed_tags = dict([(t.ak_tag_id, t) for t in _allowed_tags])
     _agent_tags = CoreTag.objects.using("ak").filter(
         corepagetag__page__coreaction__user=agent).values("name", "id", "corepagetag__page_id")
 
@@ -432,6 +433,9 @@ def _detail(request, user_id):
             editable = True
             allowed_tag_id = allowed_tags[tag['id']].id
         agent_tags.append(AgentTag(tag['name'], tag['id'], editable, allowed_tag_id))
+
+    _agent_tags = [tag.name for tag in agent_tags]
+    allowed_tags = [tag for tag in _allowed_tags if tag.tag_name not in _agent_tags]
 
     return locals()
 

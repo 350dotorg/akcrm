@@ -121,13 +121,11 @@
    {% endif %}
    {% endfor %}
    
-   {% for obj in allowed_tags.items %}
-   {% with obj.1 as tag %}
+   {% for tag in allowed_tags %}
    <form method="POST" action="{% url add_user_tag agent.id tag.id %}">
      {% csrf_token %}
      <input type="submit" class="btn" value="Add tag: {{ tag.tag_name }}" />
    </form>
-   {% endwith %}
    {% endfor %}
 
  </p>
