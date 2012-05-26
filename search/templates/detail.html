@@ -74,6 +74,12 @@
 <div class="row">
 <div class="span6" id="content-box">
  <p>
+   <strong>AKID:</strong>
+   <a target="_blank" href="{{ ACTIONKIT_URL }}/admin/core/user/{{ agent.id }}/">
+     {{ agent.id }}
+   </a>
+ </p>
+ <p>
    <strong>Name:</strong> {{ agent }}
  </p>
  <p>
@@ -160,7 +166,8 @@
 	  <thead>
 	    <tr>
 	      <th>Took Action On</th>
-	      <th>Page</th>
+	      <th>Page ID</th>
+	      <th>Page Title</th>
 	      <th>Page Type</th>
 	    </tr>
 	  </thead>
@@ -171,8 +178,12 @@
 		{{ action.created_at|date }} 
 	      </td>
 	      <td>
-		{{ action.page.title }}
+		<a target="_blank"
+		   href="{{ ACTIONKIT_URL }}/admin/core/page/{{ action.page.id }}/">
+		  {{ action.page.id }}
+		</a>
 	      </td>
+	      <td>{{ action.page.title|default:action.page.name }}</td>
 	      <td>
 		{{ action.page.type }}
 	      </td>

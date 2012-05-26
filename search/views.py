@@ -359,7 +359,9 @@ def _search(request):
 @allow_http("GET")
 @rendered_with("detail.html")
 def detail(request, user_id):
-    return _detail(request, user_id)
+    ctx = _detail(request, user_id)
+    ctx['ACTIONKIT_URL'] = settings.ACTIONKIT_URL
+    return ctx
 
 @allow_http("GET")
 def detail_json(request, user_id):
