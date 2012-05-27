@@ -54,7 +54,7 @@
   </script>
   <script type="text/javascript_template" id="details_tmpl">
     {% verbatim %}
-    <div class="span12">
+    <div class="span10">
       <h4><a href="{{ full_details_href }}">View full details</a></h4>
     </div>
     <div class="span6">
@@ -91,45 +91,47 @@
 	&ndash; sent {{ latest_click.mailed_at }}
       </p>
     </div>
-    <ul class="nav nav-tabs">
-      <li class="active"><a href="#action-history" data-toggle="tab">Action History</a></li>
-      <li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
-      <li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
-    </ul>
-    <div class="tab-content">
-      <div class="tab-pane active" id="action-history">
-	<h4 class="heading">Actions <a href="#">(View all)</a></h4>
-	<ol>
-	  {{ #actions }}
-	  <li>
-	    {{ page_title }} &ndash; {{ created_at }}
-	  </li>
-	  {{ /actions }}
-	</ol>
-      </div>
-      <div class="tab-pane" id="donation-history">
-	<h4 class="heading">Donations <a href="#">(View all)</a></h4>
-	<ol>
-	  {{ #orders }}
-	  <li>
-	    ${{ total }}: {{ page_title }} &ndash; {{ created_at }}
-	  </li>
-	  {{ /orders }}
-	</ol>
-      </div>
-      <div class="tab-pane" id="mailing-history">
-	<h4 class="heading">Mailings <a href="#">(View all)</a></h4>
-	<ol>
-	  {{ #sends }}
-	  <li>
-	    {{ subject_text }} &ndash; {{ mailed_at }}
-	    <ul>
-	      <li>Opens: {{ opens.length }}</li>
-	      <li>Clicks: {{ clicks.length }}</li>
-	    </ul>
-	  </li>
-	  {{ /sends }}
-	</ol>
+    <div class="span10">
+      <ul class="nav nav-tabs">
+	<li class="active"><a href="#action-history" data-toggle="tab">Action History</a></li>
+	<li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
+	<li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
+      </ul>
+      <div class="tab-content">
+	<div class="tab-pane active" id="action-history">
+	  <h4 class="heading">Actions <a href="#">(View all)</a></h4>
+	  <ol>
+	    {{ #actions }}
+	    <li>
+	      {{ page_title }} &ndash; {{ created_at }}
+	    </li>
+	    {{ /actions }}
+	  </ol>
+	</div>
+	<div class="tab-pane" id="donation-history">
+	  <h4 class="heading">Donations <a href="#">(View all)</a></h4>
+	  <ol>
+	    {{ #orders }}
+	    <li>
+	      ${{ total }}: {{ page_title }} &ndash; {{ created_at }}
+	    </li>
+	    {{ /orders }}
+	  </ol>
+	</div>
+	<div class="tab-pane" id="mailing-history">
+	  <h4 class="heading">Mailings <a href="#">(View all)</a></h4>
+	  <ol>
+	    {{ #sends }}
+	    <li>
+	      {{ subject_text }} &ndash; {{ mailed_at }}
+	      <ul>
+		<li>Opens: {{ opens.length }}</li>
+		<li>Clicks: {{ clicks.length }}</li>
+	      </ul>
+	    </li>
+	    {{ /sends }}
+	  </ol>
+	</div>
       </div>
     </div>
     {% endverbatim %}
