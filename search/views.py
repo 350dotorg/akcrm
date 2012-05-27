@@ -24,7 +24,7 @@ from akcrm.search.utils import clamp
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
 
-def make_default_user_query(query_data, values):
+def make_default_user_query(query_data, values, search_on, extra_data=None):
     """
     given a query_data dict and values which come from the ui,
     generate a dict that will be used for a user query
@@ -43,12 +43,34 @@ def make_default_user_query(query_data, values):
     if extra_info:
         query.update(extra_info)
 
-    return query
+    human_query = "%s is in %s" % (search_on, values)
+    return query, human_query
 
-def make_date_query(query_data, values):
+def make_date_query(query_data, values, search_on, extra_data=None):
     date = values[0]
     match = dateutil.parser.parse(date)
-    return {query_data['query']: match}
+    human_query = "%s is in %s" % (search_on, values)
+    return {query_data['query']: match}, human_query
+
+def make_zip_radius_query(query_data, values, search_on, extra_data=None):
+    zipcode = values[0]
+    zipcode = int(zipcode)
+    if 'distance' in extra_data:
+        distance = extra_data['distance']
+        distance = float(distance)
+        assert distance > 0, "Bad distance"
+        latlon = zipcode_to_latlon(zipcode)
+        assert latlon is not None, "No location found for: %s" % zipcode
+        lat, lon = latlon
+        bbox = latlon_bbox(lat, lon, distance)
+        assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
+        lat1, lat2, lon1, lon2 = bbox
+        return ({'location__latitude__range': (lat1, lat2),
+                 'location__longitude__range': (lon1, lon2)},
+                "within %s miles of %s" % (distance, zipcode)
+                )
+    else:
+        return {'zip': zipcode}, "in zip code %s" % zipcode
 
 QUERIES = {
     'country': {
@@ -94,6 +116,9 @@ QUERIES = {
     'created_after': {
         'query': "created_at__gte",
         'query_fn': make_date_query,
+        },
+    'zipcode': {
+        'query_fn': make_zip_radius_query,
         },
     }
 
@@ -280,42 +305,30 @@ def _search(request):
         users = base_user_query
         _human_query = []
         for item in include_group[1]:
+            ## "distance" is handled in a group with "zipcode", so we ignore it here
+            if item == "distance":
+                continue
+            
             possible_values = request.GET.getlist(
                 "%s_%s" % (include_group[0], item))
             if len(possible_values) == 0:
                 continue
             query_data = QUERIES[item]
+            extra_data = {}
+
+            ## XXX special cased zip code and distance
+            # these two fields are together, if we have another case like this
+            # we should probably formalize this
+            if item == "zipcode":
+                distance = request.GET.get('%s_distance' % include_group[0])
+                if distance:
+                    extra_data['distance'] = distance
+
             make_query_fn = query_data.get('query_fn', make_default_user_query)
-            query = make_query_fn(query_data, possible_values)
+            query, __human_query = make_query_fn(query_data, possible_values, item, extra_data)
+
             users = users.filter(**query)
-            _human_query.append("%s is in %s" % (item, possible_values))
-
-        # XXX special cased zip code and distance
-        # these two fields are together, if we have another case like this
-        # we should probably formalize this
-        zipcode = request.GET.get('zipcode', '')
-        distance = request.GET.get('distance', '')
-        if zipcode:
-            zipcode = int(zipcode)
-
-            # XXX handle errors
-            if distance:
-                distance = float(distance)
-                assert distance > 0, "Bad distance"
-                latlon = zipcode_to_latlon(zipcode)
-                assert latlon is not None, "No location found for: %s" % zipcode
-                lat, lon = latlon
-                bbox = latlon_bbox(lat, lon, distance)
-                assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
-                lat1, lat2, lon1, lon2 = bbox
-                users = users.filter(
-                    location__latitude__range=(lat1, lat2),
-                    location__longitude__range=(lon1, lon2),
-                    )
-                _human_query.append("within %s miles of %s" % (distance, zipcode))
-            else:
-                users = users.filter(zip=zipcode)
-                _human_query.append("in zip code %s" % zipcode)
+            _human_query.append(__human_query)
 
         if not _human_query or (
             users.query.sql_with_params() == base_user_query.query.sql_with_params()):

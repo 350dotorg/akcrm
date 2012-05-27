@@ -80,8 +80,8 @@ console.log(anchor);
             newEl.chosen();
           }
         } else if (val === "zipcode") {
-          newEl.attr('name', 'zipcode');
           var distanceEl = $('#template_distance').clone();
+          distanceEl.attr("name", $(this).attr("name") + "_" + distanceEl.attr("name"));
           newElWrapper.append(distanceEl);
         } else {
           var autocompleteUrl = newEl.attr('autocomplete');
