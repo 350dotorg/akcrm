@@ -93,12 +93,23 @@
     </div>
     <div class="span10">
       <ul class="nav nav-tabs">
-	<li class="active"><a href="#action-history" data-toggle="tab">Action History</a></li>
+	<li class="active"><a href="#contact-history" data-toggle="tab">Contact History</a></li>
+	<li><a href="#action-history" data-toggle="tab">Action History</a></li>
 	<li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
 	<li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
       </ul>
       <div class="tab-content">
-	<div class="tab-pane active" id="action-history">
+	<div class="tab-pane active" id="contact-history">
+	  <h4 class="heading">Contacts <a href="#">(View all)</a></h4>
+	  <ol>
+	    {{ #contact_history }}
+	    <li>
+	      {{ user }} &ndash; {{ type }} &ndash; {{ result }} &ndash; {{ completed_at }}
+	    </li>
+	    {{ /contact_history }}
+	  </ol>
+	</div>
+	<div class="tab-pane" id="action-history">
 	  <h4 class="heading">Actions <a href="#">(View all)</a></h4>
 	  <ol>
 	    {{ #actions }}

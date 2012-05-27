@@ -47,3 +47,12 @@ class ContactRecord(models.Model):
     def __unicode__(self):
         return u" ".join((self.user.username, str(self.akid), self.contact_type))
 
+    def to_json(self):
+        return dict(
+            user=unicode(self.user),
+            type=self.contact_type_str(),
+            result=self.result_str(),
+            akid=self.akid,
+            completed_at=self.completed_at,
+            notes=self.notes,
+            )
