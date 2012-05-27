@@ -24,7 +24,7 @@ from akcrm.search.utils import clamp
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
 
-def make_default_user_query(query_data, values, search_on, extra_data=None):
+def make_default_user_query(query_data, values, search_on, extra_data={}):
     """
     given a query_data dict and values which come from the ui,
     generate a dict that will be used for a user query
@@ -46,13 +46,13 @@ def make_default_user_query(query_data, values, search_on, extra_data=None):
     human_query = "%s is in %s" % (search_on, values)
     return query, human_query
 
-def make_date_query(query_data, values, search_on, extra_data=None):
+def make_date_query(query_data, values, search_on, extra_data={}):
     date = values[0]
     match = dateutil.parser.parse(date)
     human_query = "%s is in %s" % (search_on, values)
     return {query_data['query']: match}, human_query
 
-def make_zip_radius_query(query_data, values, search_on, extra_data=None):
+def make_zip_radius_query(query_data, values, search_on, extra_data={}):
     zipcode = values[0]
     zipcode = int(zipcode)
     if 'distance' in extra_data:
@@ -72,6 +72,22 @@ def make_zip_radius_query(query_data, values, search_on, extra_data=None):
     else:
         return {'zip': zipcode}, "in zip code %s" % zipcode
 
+def make_contact_history_query(query_data, values, search_on, extra_data={}):
+    contacted_since = values[0]
+    match = dateutil.parser.parse(contacted_since)
+    search = ContactRecord.objects.filter(completed_at__gt=match)
+    human_query = ["contacted since %s" % contacted_since]
+    if 'contacted_by' in extra_data:
+        contacted_by = extra_data['contacted_by']
+        search = search.filter(user__username=contacted_by)
+        human_query.append("by %s" % contacted_by)
+    akids = list(search.values_list("akid", flat=True))
+    if len(akids) == 0:
+        ## TODO give a helpful error message, not a mysterious always-null query
+        akids = [0]
+    return {'id__in': akids}, " ".join(human_query)
+
+        
 QUERIES = {
     'country': {
         'query': "country",
@@ -119,6 +135,9 @@ QUERIES = {
         },
     'zipcode': {
         'query_fn': make_zip_radius_query,
+        },
+    'contacted_since': {
+        'query_fn': make_contact_history_query,
         },
     }
 
@@ -219,6 +238,7 @@ def home(request):
             (('action', 'Took part in action'),
              ('source', 'Source'),
              ('tag', 'Is tagged with'),
+             ('contacted_since', "Contacted Since"),
              ),
         'About':
             (('organization', "Organization"),
@@ -308,7 +328,10 @@ def _search(request):
             ## "distance" is handled in a group with "zipcode", so we ignore it here
             if item == "distance":
                 continue
-            
+            ## same for "contacted_by", in a group with "contacted_since"
+            if item == "contacted_by":
+                continue
+
             possible_values = request.GET.getlist(
                 "%s_%s" % (include_group[0], item))
             if len(possible_values) == 0:
@@ -323,6 +346,14 @@ def _search(request):
                 distance = request.GET.get('%s_distance' % include_group[0])
                 if distance:
                     extra_data['distance'] = distance
+
+            ## XXX special cased contacted_since and contacted_by
+            # these two fields are together, if we have another case like this
+            # we should probably formalize this
+            if item == "contacted_since":
+                contacted_by = request.GET.get('%s_contacted_by' % include_group[0])
+                if contacted_by:
+                    extra_data['contacted_by'] = contacted_by
 
             make_query_fn = query_data.get('query_fn', make_default_user_query)
             query, __human_query = make_query_fn(query_data, possible_values, item, extra_data)

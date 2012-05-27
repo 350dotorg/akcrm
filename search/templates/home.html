@@ -79,10 +79,6 @@ console.log(anchor);
           } else {
             newEl.chosen();
           }
-        } else if (val === "zipcode") {
-          var distanceEl = $('#template_distance').clone();
-          distanceEl.attr("name", $(this).attr("name") + "_" + distanceEl.attr("name"));
-          newElWrapper.append(distanceEl);
         } else {
           var autocompleteUrl = newEl.attr('autocomplete');
           if (autocompleteUrl) {
@@ -93,6 +89,15 @@ console.log(anchor);
                 });
           }
         }
+	if( newEl.data("paired-with") ) {
+	  var pairedEl = $("#template_" + newEl.data("paired-with"));
+	  if( pairedEl ) {
+            pairedEl = pairedEl.clone();
+            pairedEl.attr("name", $(this).attr("name") + "_" + pairedEl.attr("name"));
+            pairedEl.removeAttr("id");
+            newElWrapper.append(pairedEl);
+          }
+        } 
       });
     });
   </script>
@@ -273,9 +278,24 @@ console.log(anchor);
      />
 
   <input
+     type="text"
+     id="template_contacted_since"
+     name="contacted_since"
+     data-paired-with="contacted_by"
+     placeholder="MM/DD/YYYY"
+     />
+
+  <input type="text"
+	 id="template_contacted_by"
+	 name="contacted_by"
+	 placeholder="Contacted by:"
+	 />
+
+  <input
      id="template_zipcode"
      type="text"
      name="zipcode"
+     data-paired-with="distance"
      placeholder="Zip Code"
      />
 
