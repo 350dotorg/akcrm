@@ -277,7 +277,7 @@ def _search(request):
 
     all_user_queries = []
     for include_group in includes:
-        users = base_user_query.all()
+        users = base_user_query
         _human_query = []
         for item in include_group[1]:
             possible_values = request.GET.getlist(
@@ -317,6 +317,10 @@ def _search(request):
                 users = users.filter(zip=zipcode)
                 _human_query.append("in zip code %s" % zipcode)
 
+        if not _human_query or (
+            users.query.sql_with_params() == base_user_query.query.sql_with_params()):
+            continue
+
         all_user_queries.append(users)
         human_query.append("(%s)" % " and ".join(_human_query))
 
@@ -329,7 +333,7 @@ def _search(request):
         else:
             users = users | query
     if users is None:
-        users = base_user_query
+        users = base_user_query.none()
     users = users.prefetch_related("fields", "phones")
 
     ctx = dict(includes=includes,
