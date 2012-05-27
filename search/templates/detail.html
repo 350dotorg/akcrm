@@ -178,48 +178,14 @@
 <div class="row">
   <div class="span12">
     <ul class="nav nav-tabs">
-      <li class="active"><a href="#action-history" data-toggle="tab">Action History</a></li>
-      <li><a href="#contact-history" data-toggle="tab">Contact History</a></li>
+      <li class="active"><a href="#contact-history" data-toggle="tab">Contact History</a></li>
+      <li><a href="#action-history" data-toggle="tab">Action History</a></li>
       <li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
       <li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
     </ul>
 
     <div class="tab-content">
-    <div class="tab-pane active" id="action-history">
-      <div class="datatables_wrapper">
-	<table class="display datatable" id="action_data">
-	  <thead>
-	    <tr>
-	      <th>Took Action On</th>
-	      <th>Page ID</th>
-	      <th>Page Title</th>
-	      <th>Page Type</th>
-	    </tr>
-	  </thead>
-	  <tbody>
-	    {% for action in actions %}
-	    <tr>
-	      <td>
-		{{ action.created_at|date }} 
-	      </td>
-	      <td>
-		<a target="_blank"
-		   href="{{ ACTIONKIT_URL }}/admin/core/page/{{ action.page.id }}/">
-		  {{ action.page.id }}
-		</a>
-	      </td>
-	      <td>{{ action.page.title|default:action.page.name }}</td>
-	      <td>
-		{{ action.page.type }}
-	      </td>
-	    </tr>
-	    {% endfor %}
-	  </tbody>
-	</table>
-      </div>
-    </div>
-
-    <div class="tab-pane" id="contact-history">
+    <div class="tab-pane active" id="contact-history">
       <p><a href="#contact_form">Add New Contact Record</a></p>
       <div class="datatables_wrapper">
 	<table class="display datatable" id="contact_data">
@@ -265,6 +231,40 @@
 	  {% endwith %}
 	  <input class="btn" type="submit" />
 	</form>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="action-history">
+      <div class="datatables_wrapper">
+	<table class="display datatable" id="action_data">
+	  <thead>
+	    <tr>
+	      <th>Took Action On</th>
+	      <th>Page ID</th>
+	      <th>Page Title</th>
+	      <th>Page Type</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    {% for action in actions %}
+	    <tr>
+	      <td>
+		{{ action.created_at|date }} 
+	      </td>
+	      <td>
+		<a target="_blank"
+		   href="{{ ACTIONKIT_URL }}/admin/core/page/{{ action.page.id }}/">
+		  {{ action.page.id }}
+		</a>
+	      </td>
+	      <td>{{ action.page.title|default:action.page.name }}</td>
+	      <td>
+		{{ action.page.type }}
+	      </td>
+	    </tr>
+	    {% endfor %}
+	  </tbody>
+	</table>
       </div>
     </div>
 
