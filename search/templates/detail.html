@@ -9,6 +9,11 @@
     $(window).load(function() {
       $("select[multiple]").chosen();
     });
+
+    $("a[href='#contact_form']").live("click", function() {
+      $("a[href='#contact-history']").click();
+      return true;
+    });
     saveSkills = function() {
       var form = $("#skills");
       $.post(form.attr("action"), form.serialize());
@@ -138,7 +143,7 @@
 
 </div>
 <div class="span6">
-  {% with action=actions.0 order=orders.0 click=clicks.0 open=opens.0 send=sends.0 %}
+  {% with action=actions.0 order=orders.0 click=clicks.0 open=opens.0 send=sends.0 contact=contact_history.0 %}
   <p>
     <strong>Latest Activity:</strong>
     {{ action.created_at|date:"m/d/y" }} &ndash; {{ action.page.title }}
@@ -170,6 +175,14 @@
     {{ click.created_at|date:"m/d/y" }} &ndash; {{ click.subject_text }}
     &ndash; sent {{ click.mailed_at|date:"m/d/y" }}
   </p>
+  <p>
+    <strong>Latest Contact:</strong>
+    {{ contact.completed_at|date:"m/d/y" }} &ndash; {{ contact.user }}
+    &ndash; {{ contact.contact_type_str }} &ndash; {{ contact.result_str }}
+  </p>
+  <p>
+    <a href="#contact_form">Add New Contact Record</a>
+  </p>
 
   {% endwith %}
 </div>
@@ -186,7 +199,6 @@
 
     <div class="tab-content">
     <div class="tab-pane active" id="contact-history">
-      <p><a href="#contact_form">Add New Contact Record</a></p>
       <div class="datatables_wrapper">
 	<table class="display datatable" id="contact_data">
 	  <thead>
