@@ -37,6 +37,8 @@
       saveSkills();
       return false;
     });
+
+
   </script>
   <script type="text/javascript">
     $(window).load(function() {
@@ -111,6 +113,29 @@
      {% endfor %}
    </form>
  </p>
+
+ <p>
+   <strong>Tags:</strong>
+   {% for tag in agent_tags %}
+   {% if tag.editable %}
+   <form method="POST" action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
+     {% csrf_token %}
+     <input type="submit" class="btn" value="Remove tag: {{ tag.name }}" />
+   </form>
+   {% else %}
+   {{ tag.name }}
+   {% endif %}
+   {% endfor %}
+   
+   {% for tag in allowed_tags %}
+   <form method="POST" action="{% url add_user_tag agent.id tag.id %}">
+     {% csrf_token %}
+     <input type="submit" class="btn" value="Add tag: {{ tag.tag_name }}" />
+   </form>
+   {% endfor %}
+
+ </p>
+
 </div>
 <div class="span6">
   {% with action=actions.0 order=orders.0 click=clicks.0 open=opens.0 send=sends.0 %}

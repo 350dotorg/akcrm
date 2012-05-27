@@ -7,3 +7,8 @@ class AdjustmentRecord(models.Model):
 
     json = models.TextField(default="{}")
 
+class AllowedTag(models.Model):
+    
+    ak_tag_id = models.IntegerField(unique=True)
+    ak_page_id = models.IntegerField(unique=True)
+    tag_name = models.CharField(max_length=300, unique=True)

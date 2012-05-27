@@ -1,10 +1,13 @@
 from actionkit import Client
 from actionkit.models import *
+from actionkit import rest
+from collections import namedtuple
 from django.conf import settings
 from django.db import connections
 from django.db.models import Count
 from djangohelpers import rendered_with, allow_http
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
 import datetime
@@ -14,6 +17,7 @@ import os.path
 import re
 from operator import itemgetter
 
+from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
 from akcrm.search.utils import clamp
@@ -422,7 +426,64 @@ def _detail(request, user_id):
 
     query = request.session.get('akcrm.query')
 
+    _allowed_tags = AllowedTag.objects.all()
+    allowed_tags = dict([(t.ak_tag_id, t) for t in _allowed_tags])
+    _agent_tags = CoreTag.objects.using("ak").filter(
+        corepagetag__page__coreaction__user=agent).values("name", "id", "corepagetag__page_id")
+
+    agent_tags = []
+    AgentTag = namedtuple("AgentTag", "name ak_tag_id editable allowed_tag_id")
+    for tag in _agent_tags:
+        editable = False
+        allowed_tag_id = None
+        if (tag['id'] in allowed_tags
+            and allowed_tags[tag['id']].ak_page_id == tag['corepagetag__page_id']):
+            editable = True
+            allowed_tag_id = allowed_tags[tag['id']].id
+        agent_tags.append(AgentTag(tag['name'], tag['id'], editable, allowed_tag_id))
+
+    # The list of already-used tags may contain duplicates.
+    # We need to filter out duplicates, and if there is an "editable" copy of the tag
+    # as well as an "uneditable" copy, we need to discard the editable one.
+    _agent_tags = {}
+    for tag in agent_tags:
+        _agent_tags.setdefault(tag.name, [])
+        if tag.editable:
+            _agent_tags[tag.name].append(tag)
+        else:
+            _agent_tags[tag.name].insert(0, tag)
+    agent_tags = (copies[0] for copies in _agent_tags.values())
+
+    # We also need to filter out the "special tag-page marker tag" 
+    # from the list -- unless it too is editable!
+    agent_tags = [tag for tag in agent_tags
+                  if (tag.ak_tag_id != settings.AKTIVATOR_TAG_PAGE_TAG_ID
+                      or tag.editable)]
+
+    # Then, we need to filter out already-used tags from the list of addable tags.
+    _agent_tags = [tag.name for tag in agent_tags]
+    allowed_tags = [tag for tag in _allowed_tags if tag.tag_name not in _agent_tags]
+
     return locals()
+
+@allow_http("POST")
+def add_user_tag(request, user_id, tag_id):
+    allowed_tag = get_object_or_404(AllowedTag, id=tag_id)
+    action = rest.create_action(allowed_tag.ak_page_id, user_id)
+    if request.is_ajax():
+        return HttpResponse(action['action']['id'])
+    return redirect("detail", user_id)
+
+@allow_http("POST")
+def remove_user_tag(request, user_id, tag_id):
+    allowed_tag = get_object_or_404(AllowedTag, id=tag_id)
+    action = get_object_or_404(CoreAction.objects.using("ak"),
+                               page__id=allowed_tag.ak_page_id,
+                               user__id=user_id)
+    rest.delete_action(action.id)
+    if request.is_ajax():
+        return HttpResponse(action.id)
+    return redirect("detail", user_id)
 
 def _mailing_history(request, agent):
     _sends = mailings_by_user(agent)
