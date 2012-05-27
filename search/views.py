@@ -290,23 +290,27 @@ def _search(request):
         # we should probably formalize this
         zipcode = request.GET.get('zipcode', '')
         distance = request.GET.get('distance', '')
-        if zipcode and distance:
-            # handle errors?
+        if zipcode:
             zipcode = int(zipcode)
-            distance = float(distance)
-            assert distance > 0, "Bad distance"
-            latlon = zipcode_to_latlon(zipcode)
-            assert latlon is not None, "No location found for: %s" % zipcode
-            lat, lon = latlon
-            bbox = latlon_bbox(lat, lon, distance)
-            assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
-            lat1, lat2, lon1, lon2 = bbox
-            users = users.filter(
-                location__latitude__range=(lat1, lat2),
-                location__longitude__range=(lon1, lon2),
-                )
-            _human_query.append("within %s miles of %s" % (distance, zipcode))
 
+            # XXX handle errors
+            if distance:
+                distance = float(distance)
+                assert distance > 0, "Bad distance"
+                latlon = zipcode_to_latlon(zipcode)
+                assert latlon is not None, "No location found for: %s" % zipcode
+                lat, lon = latlon
+                bbox = latlon_bbox(lat, lon, distance)
+                assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
+                lat1, lat2, lon1, lon2 = bbox
+                users = users.filter(
+                    location__latitude__range=(lat1, lat2),
+                    location__longitude__range=(lon1, lon2),
+                    )
+                _human_query.append("within %s miles of %s" % (distance, zipcode))
+            else:
+                users = users.filter(zip=zipcode)
+                _human_query.append("in zip code %s" % zipcode)
 
         all_user_queries.append(users)
         human_query.append("(%s)" % " and ".join(_human_query))
