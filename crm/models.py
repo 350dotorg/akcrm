@@ -14,7 +14,7 @@ class ContactRecord(models.Model):
         return dict(self.CONTACT_TYPE_CHOICES)[self.contact_type]
 
     akid = models.IntegerField(db_index=True)
-    user = models.ForeignKey("auth.User")
+    user = models.ForeignKey("auth.User", verbose_name="Contacted by")
     
     completed_at = models.DateTimeField(auto_now_add=True)
 
