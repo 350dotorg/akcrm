@@ -410,6 +410,18 @@ def _search(request):
     ctx['users'] = users
     ctx['request'] = request
     request.session['akcrm.query'] = request.GET.urlencode()
+    num_results = len(users)
+
+    log = open("/tmp/aktivator.log", 'a')
+    print >> log, "%s | %s | %s | %s | %s | %s" % (
+        datetime.datetime.now(),
+        request.user.username,
+        request.GET.urlencode(),
+        users.query.sql_with_params(),
+        num_results,
+        connections['ak'].queries)
+    log.close()
+
     return ctx
 
 @allow_http("GET")
