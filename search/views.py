@@ -377,7 +377,7 @@ def _search(request):
         else:
             users = users | query
     if users is None:
-        users = base_user_query.none()
+        users = base_user_query
     users = users.prefetch_related("fields", "phones")
 
     ctx = dict(includes=includes,
@@ -402,6 +402,9 @@ def _search(request):
         users = users.extra(
             where=extra_where,
             params=extra_params)
+
+    if users.query.sql_with_params() == base_user_query.query.sql_with_params():
+        users = base_user_query.none()
 
     ctx['human_query'] = human_query
     ctx['users'] = users
