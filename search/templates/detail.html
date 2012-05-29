@@ -42,7 +42,15 @@
       saveSkills();
       return false;
     });
-
+    $("#user_tags a[data-tag-name]").live("click", function() {
+      var tag = $(this).data("tag-name");
+      var form = $("ul#user_tags li#" + tag).find("form.remove_tag");
+      $.post(form.attr("action"), form.serialize(), function(data) {
+        return;
+      });
+      $("ul#user_tags li#" + tag).remove();
+      return false;
+    });
 
   </script>
   <script type="text/javascript">
@@ -55,6 +63,9 @@
     });
   </script>
   <style type="text/css">
+    form.remove_tag {
+      display: none;
+    }
     li.bsmListItem {
       border-radius: 5px;
       margin: 2px 0;
@@ -121,23 +132,35 @@
 
  <p>
    <strong>Tags:</strong>
-   {% for tag in agent_tags %}
-   {% if tag.editable %}
-   <form method="POST" action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
-     {% csrf_token %}
-     <input type="submit" class="btn" value="Remove tag: {{ tag.name }}" />
-   </form>
-   {% else %}
-   {{ tag.name }}
-   {% endif %}
-   {% endfor %}
+   <ul id="user_tags">
+     {% for tag in agent_tags %}
+     <li id="{{ tag.name }}">
+       {{ tag.name }}
+       {% if tag.editable %}
+       <a data-tag-name="{{ tag.name }}"
+	  class="btn" href="#"><i class="icon-minus-sign"></i></a>
+       <form class="remove_tag" method="POST" 
+	     action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
+	 {% csrf_token %}
+	 <input type="submit" class="btn" />
+       </form>
+       {% endif %}
+     </li>
+     {% endfor %}
+   </ul>
    
-   {% for tag in allowed_tags %}
-   <form method="POST" action="{% url add_user_tag agent.id tag.id %}">
-     {% csrf_token %}
-     <input type="submit" class="btn" value="Add tag: {{ tag.tag_name }}" />
-   </form>
-   {% endfor %}
+   <strong>Add Tag:</strong>
+   <ul id="allowed_tags">
+     {% for tag in allowed_tags %}
+     <li id="{{ tag.name }}">
+       <form class="add_tag" method="POST" 
+	     action="{% url add_user_tag agent.id tag.id %}">
+	 {% csrf_token %}
+	 <input type="submit" class="btn" value="{{ tag.tag_name }}" />
+       </form>
+       {% endfor %}
+     </li>
+   </ul>
 
  </p>
 
