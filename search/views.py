@@ -1,3 +1,4 @@
+from StringIO import StringIO
 from actionkit import Client
 from actionkit.models import *
 from actionkit import rest
@@ -10,6 +11,7 @@ from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
+import csv
 import datetime
 import dateutil.parser
 import json
@@ -604,3 +606,36 @@ def edit_skills(request, user_id):
     user = actionkit.User.save({'id': user_id, 'user_skills': skills})
     return HttpResponse(json.dumps(user['custom_fields'].get("skills", [])),
                         content_type="text/plain")
+
+
+def user_to_csv_row(user, fields):
+    row = []
+    for field in fields:
+        value = getattr(user, field, '')
+        row.append(value)
+    return row
+
+
+@allow_http("GET")
+@rendered_with("search_csv.html")
+def search_csv(request):
+    user_fields = ['first_name', 'last_name', 'email',
+                   'address1', 'address2', 'city', 'state', 'region',
+                   'postal', 'zip', 'country',
+                   'source', 'subscription_status']
+    fields = request.GET.getlist('fields')
+    if not fields:
+        return dict(fields=user_fields,
+                    request=request)
+    
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(fields)
+    users = _search(request)['users']
+    for user in users:
+        row = user_to_csv_row(user, fields)
+        writer.writerow(row)
+    response = HttpResponse(buffer.getvalue())
+    response['Content-Type'] = 'text/csv'
+    response['Content-Disposition'] = 'attachment; filename=search.csv'
+    return response

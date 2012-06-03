@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load helpful_tags verbatim %}
+<html>
+<body>
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  {% endblock %}
+  {% block content %}
+  <h2>Export fields</h2>
+  <form method="GET"
+        action="{% url search_csv %}">
+    
+    {% for key,value in request.GET.items %}
+      <input type="hidden" name="{{key}}" value="{{value}}" />
+    {% endfor %}
+
+    {% for field in fields %}
+      <input type="checkbox"
+             name="fields" value="{{field}}"
+             checked="checked" />
+      {{field}}
+      <br />
+    {% endfor %}
+    <br />
+   <input type="submit" value="Export CSV" />
+  </form>
+  {% endblock %}
+</body>
+</html>
