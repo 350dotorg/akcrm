@@ -479,6 +479,8 @@ def _detail(request, user_id):
     actions = list(agent.actions.all().select_related("page").order_by("-created_at"))
     orders = list(agent.orders.all().select_related("action", "action__page").order_by("-created_at"))
     
+    total_donations = sum(order.total for order in orders)
+
     clicks = clicks_by_user(agent)
     opens = opens_by_user(agent)
     sends = CoreUserMailing.objects.using("ak").filter(user=agent).order_by("-created_at").select_related("subject")

@@ -123,6 +123,9 @@
 </div>
 <div class="span6">
   <p>
+    <strong>Lifetime Donations:</strong> ${{ total_donations }}
+  </p>
+  <p>
     <strong>Opens:</strong> {{ opens|length }}
     &mdash;
     <strong>Clicks:</strong> {{ clicks|length }}
@@ -248,7 +251,7 @@
 		{{ order.created_at|date }} 
 	      </td>
 	      <td>
-		{{ order.total|floatformat:2 }}
+		${{ order.total|floatformat:2 }}
 	      </td>
 	      <td>
 		{{ order.status }}
