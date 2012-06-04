@@ -92,55 +92,63 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-<div class="span6" id="content-box">
- <p>
-   <strong>AKID:</strong>
-   <a target="_blank" href="{{ ACTIONKIT_URL }}/admin/core/user/{{ agent.id }}/">
-     {{ agent.id }}
-   </a>
- </p>
- <p>
-   <strong>Name:</strong> {{ agent }}
- </p>
- <p>
-   <strong>Email:</strong> {{ agent.email }}
- </p>
- <p>
-   <strong>Phone:</strong> {{ agent.phone }}
- </p>
- <p>
-   <strong>ZIP:</strong> {{ agent.zip }}
- </p>
- <p>
-   <strong>Address:</strong> {{ agent.formatted_address }}
- </p>
+  <div class="span12 header-compact" style="margin-bottom: 2em">
+    <h2>{{ agent }}</h2>
 
- <p>
-   <strong>Tags:</strong>
-   {{ agent_tags|joined_by:", " }}
- </p>
+    <a target="_blank" 
+       href="{{ ACTIONKIT_URL }}/admin/core/user/{{ agent.id }}/"
+       class="btn">View/Edit in Actionkit</a>
+    <a href="#contact_form" class="btn">Add New Contact Record</a>
+  </div>
 
+  <div class="span2" id="profile_photo">
+    <div class="inner-border">
+      <img src="/static/default-portrait.gif" />
+    </div>
+  </div>
+  <div class="span5" id="content-box">
+    <div class="inner-border">
+      <p>
+	<strong>Name:</strong> {{ agent }}
+      </p>
+      <p>
+	<strong>Email:</strong> {{ agent.email }}
+      </p>
+      <p>
+	<strong>Phone:</strong> {{ agent.phone }}
+      </p>
+      <p>
+	<strong>ZIP:</strong> {{ agent.zip }}
+      </p>
+      <p>
+	<strong>Address:</strong> {{ agent.formatted_address }}
+      </p>
+    </div>
+  </div>
+
+  <div class="span5">
+    <div class="inner-border">
+      <p>
+	<strong>Lifetime donations:</strong> ${{ total_donations }}
+      </p>
+      <p>
+	<strong>Lifetime email opens:</strong> {{ opens|length }}
+      </p>
+      <p>
+	<strong>Lifetime email clicks:</strong> {{ clicks|length }}
+      </p>
+      <p>
+	<strong>Lifetime email sends:</strong> {{ sends.count }}
+      </p>
+      <p>
+	<strong>Tags:</strong>
+	{{ agent_tags|joined_by:", " }}
+      </p>
+    </div>
+  </div>
 </div>
-<div class="span6">
-  <p>
-    <strong>Lifetime donations:</strong> ${{ total_donations }}
-  </p>
-  <p>
-    <strong>Lifetime email opens:</strong> {{ opens|length }}
-  </p>
-  <p>
-    <strong>Lifetime email clicks:</strong> {{ clicks|length }}
-  </p>
-  <p>
-    <strong>Lifetime email sends:</strong> {{ sends.count }}
-  </p>
 
-  <p>
-    <a href="#contact_form">Add New Contact Record</a>
-  </p>
-
-</div>
-</div>
+<hr />
 
 <div class="row">
   <div class="span12">
