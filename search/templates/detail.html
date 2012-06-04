@@ -112,23 +112,6 @@
  <p>
    <strong>Address:</strong> {{ agent.formatted_address }}
  </p>
- <p>
-   <form id="skills" method="POST" action="{% url edit_skills agent.id %}">
-     {% csrf_token %}
-     <div style="padding-bottom: 5px">
-       <strong>Skills:</strong>
-       <a href="#" class="add btn"><i class="icon-plus-sign"></i></a>
-     </div>
-     {% for skill in agent.custom_fields.skills %}
-     <div class="input-prepend">
-       <span class="add-on">
-	 <a href="#" class="icon-minus-sign"></a>
-       </span>
-       <input type="text" name="skills" value="{{ skill }}" />
-     </div>
-     {% endfor %}
-   </form>
- </p>
 
  <p>
    <strong>Tags:</strong>
@@ -166,16 +149,6 @@
 
 </div>
 <div class="span6">
-  {% with action=actions.0 order=orders.0 click=clicks.0 open=opens.0 send=sends.0 contact=contact_history.0 %}
-  <p>
-    <strong>Latest Activity:</strong>
-    {{ action.created_at|date:"m/d/y" }} &ndash; {{ action.page.title }}
-  </p>
-  <p>
-    <strong>Latest Contribution:</strong>
-    {{ order.created_at|date:"m/d/y" }} &ndash; {{ order.action.page.title }} 
-    &ndash; ${{ order.total|floatformat:2 }}
-  </p>
   <p>
     <strong>Opens:</strong> {{ opens|length }}
     &mdash;
@@ -183,31 +156,11 @@
     &mdash;
     <strong>Sends:</strong> {{ sends.count }}
   </p>
-  <p>
-    <strong>Latest Mailing:</strong>
-    {{ send.created_at|date:"m/d/y" }} &ndash; {{ send.subject.text }}
-    &ndash; sent {{ send.created_at|date:"m/d/y" }}
-  </p>
-  <p>
-    <strong>Latest Open:</strong>
-    {{ open.created_at|date:"m/d/y" }} &ndash; {{ open.subject_text }}
-    &ndash; sent {{ open.mailed_at|date:"m/d/y" }}
-  </p>
-  <p>
-    <strong>Latest Click:</strong>
-    {{ click.created_at|date:"m/d/y" }} &ndash; {{ click.subject_text }}
-    &ndash; sent {{ click.mailed_at|date:"m/d/y" }}
-  </p>
-  <p>
-    <strong>Latest Contact:</strong>
-    {{ contact.completed_at|date:"m/d/y" }} &ndash; {{ contact.user }}
-    &ndash; {{ contact.contact_type_str }} &ndash; {{ contact.result_str }}
-  </p>
+
   <p>
     <a href="#contact_form">Add New Contact Record</a>
   </p>
 
-  {% endwith %}
 </div>
 </div>
 
