@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% load aktivator_tags %}
+
 <html>
 <head>
   {% block head %}
@@ -115,6 +117,8 @@
 
  <p>
    <strong>Tags:</strong>
+   {{ agent_tags|joined_by:", " }}
+
    <ul id="user_tags">
      {% for tag in agent_tags %}
      <li id="{{ tag.name }}">

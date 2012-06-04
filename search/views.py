@@ -2,7 +2,6 @@ from StringIO import StringIO
 from actionkit import Client
 from actionkit.models import *
 from actionkit import rest
-from collections import namedtuple
 from django.conf import settings
 from django.db import connections
 from django.db.models import Count
@@ -22,6 +21,7 @@ from operator import itemgetter
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
+from akcrm.search.models import AgentTag
 from akcrm.search.utils import clamp
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
@@ -497,7 +497,7 @@ def _detail(request, user_id):
         corepagetag__page__coreaction__user=agent).values("name", "id", "corepagetag__page_id")
 
     agent_tags = []
-    AgentTag = namedtuple("AgentTag", "name ak_tag_id editable allowed_tag_id")
+    
     for tag in _agent_tags:
         editable = False
         allowed_tag_id = None
