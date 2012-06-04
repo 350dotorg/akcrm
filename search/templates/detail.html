@@ -118,37 +118,6 @@
  <p>
    <strong>Tags:</strong>
    {{ agent_tags|joined_by:", " }}
-
-   <ul id="user_tags">
-     {% for tag in agent_tags %}
-     <li id="{{ tag.name }}">
-       {{ tag.name }}
-       {% if tag.editable %}
-       <a data-tag-name="{{ tag.name }}"
-	  class="btn" href="#"><i class="icon-minus-sign"></i></a>
-       <form class="remove_tag" method="POST" 
-	     action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
-	 {% csrf_token %}
-	 <input type="submit" class="btn" />
-       </form>
-       {% endif %}
-     </li>
-     {% endfor %}
-   </ul>
-   
-   <strong>Add Tag:</strong>
-   <ul id="allowed_tags">
-     {% for tag in allowed_tags %}
-     <li id="{{ tag.name }}">
-       <form class="add_tag" method="POST" 
-	     action="{% url add_user_tag agent.id tag.id %}">
-	 {% csrf_token %}
-	 <input type="submit" class="btn" value="{{ tag.tag_name }}" />
-       </form>
-       {% endfor %}
-     </li>
-   </ul>
-
  </p>
 
 </div>
@@ -175,6 +144,7 @@
       <li><a href="#action-history" data-toggle="tab">Action History</a></li>
       <li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
       <li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
+      <li><a href="#tags" data-toggle="tab">Tags</a></li>
     </ul>
 
     <div class="tab-content">
@@ -308,6 +278,42 @@
 	  </tbody>
 	</table>
       </div>
+    </div>
+
+    <div class="tab-pane" id="tags">
+
+      <ul id="user_tags">
+	{% for tag in agent_tags %}
+	<li id="{{ tag.name }}">
+	  {{ tag.name }}
+	  {% if tag.editable %}
+	  <a data-tag-name="{{ tag.name }}"
+	     class="btn" href="#"><i class="icon-minus-sign"></i></a>
+	  <form class="remove_tag" method="POST" 
+		action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
+	    {% csrf_token %}
+	    <input type="submit" class="btn" />
+	  </form>
+	  {% endif %}
+	</li>
+	{% endfor %}
+      </ul>
+
+      {% if allowed_tags %}
+      <strong>Add Tag:</strong>
+      <ul id="allowed_tags">
+	{% for tag in allowed_tags %}
+	<li id="{{ tag.name }}">
+	  <form class="add_tag" method="POST" 
+		action="{% url add_user_tag agent.id tag.id %}">
+	    {% csrf_token %}
+	    <input type="submit" class="btn" value="{{ tag.tag_name }}" />
+	  </form>
+	  {% endfor %}
+	</li>
+      </ul>
+      {% endif %}
+
     </div>
   </div>
 </div>
