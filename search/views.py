@@ -21,6 +21,7 @@ from operator import itemgetter
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
+from akcrm.permissions import authorize
 from akcrm.search.models import AgentTag
 from akcrm.search.utils import clamp
 from akcrm.search.utils import latlon_bbox
@@ -618,6 +619,7 @@ def user_to_csv_row(user, fields):
     return row
 
 
+@authorize("search_export")
 @allow_http("GET")
 @rendered_with("search_csv.html")
 def search_csv(request):

@@ -71,6 +71,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'akcrm.permissions.middleware.PermissionsMiddleware',
 )
 
 INTERNAL_IPS = ('127.0.0.1',)
