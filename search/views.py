@@ -487,10 +487,12 @@ def _detail(request, user_id):
     sends = CoreUserMailing.objects.using("ak").filter(user=agent).order_by("-created_at").select_related("subject")
 
     contact_history = list(ContactRecord.objects.filter(akid=user_id).order_by("-completed_at").select_related("user"))
-    contact_form = ContactForm(initial={
-            'akid': user_id,
-            'user': request.user,
-            })
+
+    if getattr(request.PERMISSIONS, 'add_contact_record'):
+        contact_form = ContactForm(initial={
+                'akid': user_id,
+                'user': request.user,
+                })
 
     query = request.session.get('akcrm.query')
 

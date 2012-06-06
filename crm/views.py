@@ -16,7 +16,9 @@ import re
 
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
+from akcrm.permissions import authorize
 
+@authorize("add_contact_record")
 @allow_http("POST")
 @rendered_with("_form.html")
 def contacts_for_user(request, akid):

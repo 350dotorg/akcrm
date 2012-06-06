@@ -98,7 +98,9 @@
     <a target="_blank" 
        href="{{ ACTIONKIT_URL }}/admin/core/user/{{ agent.id }}/"
        class="btn">View/Edit in Actionkit</a>
+    {% if request.PERMISSIONS.add_contact_record %}
     <a href="#contact_form" class="btn">Add New Contact Record</a>
+    {% endif %}
   </div>
 
   <div class="span2" id="profile_photo">
@@ -196,6 +198,7 @@
 	  </tbody>
 	</table>
       </div>
+      {% if request.PERMISSIONS.add_contact_record %}
       <br /><br />
       <div id="contact_form">
 	<h3>Add New Contact Record</h3>
@@ -207,6 +210,7 @@
 	  <input class="btn" type="submit" />
 	</form>
       </div>
+      {% endif %}
     </div>
 
     <div class="tab-pane" id="action-history">
