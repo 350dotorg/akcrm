@@ -536,6 +536,7 @@ def _detail(request, user_id):
 
     return locals()
 
+@authorize("edit_user")
 @allow_http("POST")
 def add_user_tag(request, user_id, tag_id):
     allowed_tag = get_object_or_404(AllowedTag, id=tag_id)
@@ -544,6 +545,7 @@ def add_user_tag(request, user_id, tag_id):
         return HttpResponse(action['action']['id'])
     return redirect("detail", user_id)
 
+@authorize("edit_user")
 @allow_http("POST")
 def remove_user_tag(request, user_id, tag_id):
     allowed_tag = get_object_or_404(AllowedTag, id=tag_id)
@@ -598,6 +600,7 @@ def mailing_history(request, user_id):
 
 from actionkit.utils import get_client
 
+@authorize("edit_user")
 @allow_http("POST")
 def edit_skills(request, user_id):
     try:

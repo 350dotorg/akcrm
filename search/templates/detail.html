@@ -306,7 +306,7 @@
 	{% for tag in agent_tags %}
 	<li id="{{ tag.name }}">
 	  {{ tag.name }}
-	  {% if tag.editable %}
+	  {% if request.PERMISSIONS.edit_user and tag.editable %}
 	  <a data-tag-name="{{ tag.name }}"
 	     class="btn" href="#"><i class="icon-minus-sign"></i></a>
 	  <form class="remove_tag" method="POST" 
@@ -319,7 +319,7 @@
 	{% endfor %}
       </ul>
 
-      {% if allowed_tags %}
+      {% if request.PERMISSIONS.edit_user and allowed_tags %}
       <strong>Add Tag:</strong>
       <ul id="allowed_tags">
 	{% for tag in allowed_tags %}
