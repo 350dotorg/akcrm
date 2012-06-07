@@ -146,6 +146,9 @@ console.log(anchor);
 <body>
 {% block nav %}
 <li class="active"><a href="/">New Search</a></li>
+{% if request.PERMISSIONS.add_allowed_tags %}
+<li><a href="{% url allowed_tags %}">Manage Tags</a></li>
+{% endif %}
 {% endblock %}
 
 {% block content %}

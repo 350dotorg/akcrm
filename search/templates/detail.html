@@ -86,6 +86,9 @@
 <body>
 {% block nav %}
 <li><a href="{% url home %}">New Search</a></li>
+{% if request.PERMISSIONS.add_allowed_tags %}
+<li><a href="{% url allowed_tags %}">Manage Tags</a></li>
+{% endif %}
 {% if query %}
 <li><a href="{% url search %}?{{query}}">Back to Results</a></li>
 {% endif %}

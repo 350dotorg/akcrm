@@ -16,7 +16,9 @@ import re
 
 from akcrm.cms.models import AllowedTag
 from akcrm.cms.forms import AllowedTagForm
+from akcrm.permissions import authorize
 
+@authorize("add_allowed_tags")
 @allow_http("GET", "POST")
 @rendered_with("cms/allowed_tags.html")
 def allowed_tags(request):

@@ -152,6 +152,9 @@
 <body>
   {% block nav %}
   <li><a href="{% url home %}">New Search</a></li>
+  {% if request.PERMISSIONS.add_allowed_tags %}
+  <li><a href="{% url allowed_tags %}">Manage Tags</a></li>
+  {% endif %}
   <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">Get Raw SQL for ActionKit Mailings</a></li>
   <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">Get AKIDs for Actionkit Includes/Excludes</a></li>
   {% endblock %}
