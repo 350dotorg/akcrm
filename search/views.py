@@ -26,6 +26,8 @@ from akcrm.search.models import AgentTag
 from akcrm.search.utils import clamp
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
+import akcrm.search.query as q
+
 
 def make_default_user_query(query_data, values, search_on, extra_data={}):
     """
@@ -90,7 +92,7 @@ def make_contact_history_query(query_data, values, search_on, extra_data={}):
         akids = [0]
     return {'id__in': akids}, " ".join(human_query)
 
-        
+
 QUERIES = {
     'country': {
         'query': "country",
@@ -636,7 +638,7 @@ def search_csv(request):
     if not fields:
         return dict(fields=user_fields,
                     request=request)
-    
+
     buffer = StringIO()
     writer = csv.writer(buffer)
     writer.writerow(fields)
@@ -648,3 +650,25 @@ def search_csv(request):
     response['Content-Type'] = 'text/csv'
     response['Content-Disposition'] = 'attachment; filename=search.csv'
     return response
+
+
+def test_search(request):
+    first_name = 'ethan'
+    last_name = 'jucovy'
+
+    combined = reduce(q.combine_filters_and,
+                      [q.equal('first_name', first_name),
+                       q.equal('last_name', last_name),
+                       vertical_filter('name', 'skills',
+                                       'value', 'programming'),
+                       q.join('core_userfield cuf', 'cu.id = cuf.parent_id')],
+                      q.monoid())
+    sql = generate_sql(combined)
+    cursor = connections['ak'].cursor()
+    cursor.execute(sql, combined['parameters'])
+    results = cursor.fetchall()
+    html = ('<html><body><ul>' +
+            ''.join(['<li>%s</li>' % (', '.join(map(str, row)))
+                     for row in results]) +
+            '</ul></body></html>')
+    return HttpResponse(html)
