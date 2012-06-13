@@ -132,6 +132,8 @@ LOGGING = {
     }
 }
 
+TEST_RUNNER = 'akcrm.search.test_runner.ByPassableDBDjangoTestSuiteRunner'
+
 TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
     "django.core.context_processors.debug",
