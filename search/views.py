@@ -1,12 +1,21 @@
 from StringIO import StringIO
 from actionkit import Client
-from actionkit.models import *
+from actionkit.models import CoreAction
+from actionkit.models import CoreLanguage
+from actionkit.models import CorePage
+from actionkit.models import CorePhone
+from actionkit.models import CoreTag
+from actionkit.models import CoreUser
+from actionkit.models import CoreUserField
+from actionkit.models import CoreUserMailing
 from actionkit import rest
 from django.conf import settings
 from django.db import connections
 from django.db.models import Count
 from djangohelpers import rendered_with, allow_http
-from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
+from django.http import HttpResponseNotFound
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
@@ -93,57 +102,98 @@ def make_contact_history_query(query_data, values, search_on, extra_data={}):
     return {'id__in': akids}, " ".join(human_query)
 
 
+def in_(column):
+    return lambda value, all_values: q._in(column, value)
+
+
+def action_page_id():
+    def query(value, all_values):
+        specs = [q.in_('cp.id', value),
+                 q.join('core_action ca', 'ca.user_id=cu.id'),
+                 q.join('core_page cp', 'ca.page_id=cp.id')]
+        return q.combine_specs(specs)
+    return query
+
+
+def action_page_pagetags_tag_in():
+    def query(value, all_values):
+        specs = [q.in_('ct.id', value),
+                 q.join('core_action ca', 'ca.user_id=cu.id'),
+                 q.join('core_page cp', 'ca.page_id=cp.id'),
+                 q.join('core_page_tags cpt', 'cpt.page_id=cp.id'),
+                 q.join('core_tag ct', 'cpt.tag_id=ct.id')]
+        return q.combine_specs(specs)
+    return query
+
+
+def userfield_vertical(name):
+    def query(value, all_values):
+        specs = [q.vertical('cuf.name', name, 'cuf.value', value),
+                 q.join('core_userfield cuf', 'cu.id=cuf.parent_id')]
+        return q.combine_specs(specs)
+    return query
+
+
+def language():
+    def query(value, all_values):
+        specs = [q.in_('cl.id', value),
+                 q.join('core_language cl', 'cu.lang_id=cl.id')]
+        return q.combine_specs(specs)
+    return query
+
+
+def created_at(date_comparison):
+    def query(value, all_values):
+        datespec = value[0]
+        parsed_date = dateutil.parser.parse(datespec)
+        return q.simple_filter(date_comparison, 'created_at', parsed_date)
+    return query
+
+
+def zip_radius():
+    def query(value, all_values):
+        zipcode = value[0]
+        zipcode = int(zipcode)
+        assert 'distance' in all_values, "No distance found for zip query"
+        distance = all_values['distance']
+        distance = float(distance)
+        assert distance > 0, "Bad distance"
+        latlon = zipcode_to_latlon(zipcode)
+        assert latlon is not None, "No location found for: %s" % zipcode
+        lat, lon = latlon
+        bbox = latlon_bbox(lat, lon, distance)
+        err = "Bad bounding box for latlon: %s,%s" % (lat, lon)
+        assert bbox is not None, err
+        lat1, lat2, lon1, lon2 = bbox
+        specs = [
+            q.between('cl.latitude', lat1, lat2),
+            q.between('cl.longitude', lon1, lon2),
+            q.join('core_location cl', 'cu.id=cl.user_id')]
+        return q.combine_filters_and(specs)
+    return query
+
+
+def contact_history():
+    pass
+
+
 QUERIES = {
-    'country': {
-        'query': "country",
-        },
-    'region': {
-        'query': "region",
-        },
-    'state': {
-        'query': "state",
-        },
-    'city': {
-        'query': "city",
-        },
-    'action': {
-        'query': "actions__page__id",
-        },
-    'source': {
-        'query': "source",
-        },
-    'tag': {
-        'query': "actions__page__pagetags__tag__id",
-        },
-    'organization': {
-        'query': "fields__value",
-        'extra': {"fields__name": "organization"},
-        },
-    'skills': {
-        'query': "fields__value",
-        'extra': {"fields__name": "skills"},
-        },
-    'engagement_level': {
-        'query': "fields__value",
-        'extra': {"fields__name": "engagement_level"},
-        },
-    'language': {
-        'query': "lang__id",
-        },
-    'created_before': {
-        'query': "created_at__lte",
-        'query_fn': make_date_query,
-        },
-    'created_after': {
-        'query': "created_at__gte",
-        'query_fn': make_date_query,
-        },
-    'zipcode': {
-        'query_fn': make_zip_radius_query,
-        },
-    'contacted_since': {
-        'query_fn': make_contact_history_query,
-        },
+    # callables that take the value and all request values
+    'country': in_('cu.country'),
+    'region': in_('cu.region'),
+    'state': in_('cu.state'),
+    'city': in_('cu.city'),
+    'action': action_page_id(),  # 'query': "actions__page__id",
+    'source': in_('cu.source'),
+    'tag': action_page_pagetags_tag_in(),
+    'organization': userfield_vertical('organization'),
+    'skills': userfield_vertical('skills'),
+    'engagement_level': userfield_vertical('engagement_level'),
+    'language': language(),  # 'query': "lang__id",
+    'created_before': created_at('<='),
+    'created_after': created_at('>='),
+    'zipcode': zip_radius(),  # 'query_fn': make_zip_radius_query, },
+    'contacted_since': contact_history()  # 'query_fn': make_contact_history_query,
     }
 
 
@@ -312,10 +362,8 @@ def search_just_akids(request):
     akids = ", ".join(str(i) for i in akids)
     return HttpResponse(akids, content_type="text/plain")
 
+
 def _search(request):
-    base_user_query = CoreUser.objects.using("ak").order_by(
-        "id")
-    
     includes = []
 
     include_pattern = re.compile("^include:\d+$")
@@ -323,95 +371,76 @@ def _search(request):
         if include_pattern.match(key) and request.GET[key]:
             includes.append((key, request.GET.getlist(key)))
 
-    human_query = []
-
-    all_user_queries = []
+    queries_to_or = []
+    queries_to_and = []
     for include_group in includes:
-        users = base_user_query
-        _human_query = []
-        for item in include_group[1]:
-            ## "distance" is handled in a group with "zipcode", so we ignore it here
-            if item == "distance":
-                continue
-            ## same for "contacted_by", in a group with "contacted_since"
-            if item == "contacted_by":
-                continue
-
+        items = include_group[1]
+        for item in items:
             possible_values = request.GET.getlist(
                 "%s_%s" % (include_group[0], item))
             if len(possible_values) == 0:
                 continue
-            query_data = QUERIES[item]
-            extra_data = {}
+            query_fn = QUERIES.get(item, None)
+            if query_fn is None:
+                continue
+            query = query_fn(possible_values, items)
+            queries_to_and.append(query)
 
-            ## XXX special cased zip code and distance
-            # these two fields are together, if we have another case like this
-            # we should probably formalize this
-            if item == "zipcode":
-                distance = request.GET.get('%s_distance' % include_group[0])
-                if distance:
-                    extra_data['distance'] = distance
+        anded = q.combine_filters_and(queries_to_and)
+        queries_to_or.append(anded)
 
-            ## XXX special cased contacted_since and contacted_by
-            # these two fields are together, if we have another case like this
-            # we should probably formalize this
-            if item == "contacted_since":
-                contacted_by = request.GET.get('%s_contacted_by' % include_group[0])
-                if contacted_by:
-                    extra_data['contacted_by'] = contacted_by
+    ored = q.combine_filters_or(queries_to_or)
 
-            make_query_fn = query_data.get('query_fn', make_default_user_query)
-            query, __human_query = make_query_fn(query_data, possible_values, item, extra_data)
+    # additional and queries to add on
+    additional_filters_to_and = []
+    if request.GET.get("user_name"):
+        query = q.like(
+            "CONCAT(cu.first_name, ' ', cu.last_name)",
+            "%" + "%".join(request.GET['user_name'].split()) + "%")
+        additional_filters_to_and.append(query)
 
-            users = users.filter(**query)
-            _human_query.append(__human_query)
+    if request.GET.get("user_email"):
+        query = q.like('cu.email', request.GET['user_email'] + '%')
+        additional_filters_to_and.append(query)
 
-        if not _human_query or (
-            users.query.sql_with_params() == base_user_query.query.sql_with_params()):
-            continue
+    additional_anded = q.combine_filters_and(additional_filters_to_and)
+    all_combined = q.combine_filters_or([ored, additional_anded])
 
-        all_user_queries.append(users)
-        human_query.append("(%s)" % " and ".join(_human_query))
+    sql, parameters = q.user_sql(all_combined)
+
+    users = list(CoreUser.objects.db_manager('ak').raw(sql, parameters))
+
+    #cursor = connections['ak'].cursor()
+    #cursor.execute(sql, parameters)
+    #results = cursor.fetchall()
+    #users = [CoreUser(*result) for result in results]
 
 
-    human_query = "\n or ".join(human_query)
-    users = None
-    for i, query in enumerate(all_user_queries):
-        if i == 0:
-            users = query
-        else:
-            users = users | query
-    if users is None:
-        users = base_user_query
-    users = users.prefetch_related("fields", "phones")
+#    user_ids = [u.id for u in users]
+#    phones = CorePhone.objects.using('ak').filter(user_id__in=user_ids)
+#    user_id_phones_map = {}
+#    for phone in phones:
+#        user_id_phones_map.setdefault(phone.user_id, []).append(phone)
+#
+#    userfields = CoreUserField.objects.using('ak').filter(
+#        parent_id__in=user_ids)
+#    user_id_fields_map = {}
+#    for uf in userfields:
+#        user_id_fields_map.setdefault(uf.parent_id, []).append(uf)
+#
+#    for user in users:
+#        phones = user_id_phones_map.get(user.id)
+#        if phones:
+#            user.phones = phones
+#        fields = user_id_fields_map.get(user.id)
+#        if fields:
+#            user.fields = fields
+
 
     ctx = dict(includes=includes,
                params=request.GET)
 
-    ### If both of user_name and user_email are filled out,
-    ### search for anyone who matches EITHER condition, rather than both.
-    extra_where = []
-    extra_params = []
-    if request.GET.get("user_name"):
-        extra_where.append(
-            "CONCAT(`core_user`.`first_name`, ' ', `core_user`.`last_name`) LIKE %s")
-        extra_params.append("%" + "%".join(request.GET['user_name'].split()) + "%")
-        human_query += "\n and name is like \"%s\"" % request.GET['user_name']
-    if request.GET.get("user_email"):
-        extra_where.append("`core_user`.`email` LIKE %s")
-        extra_params.append("%" + request.GET.get("user_email") + "%")
-        human_query += "\n and email is like \"%s\"" % request.GET['user_email']
-    if len(extra_where):
-        if len(extra_where) == 2:
-            extra_where = ["(%s OR %s)" % tuple(extra_where)]
-        users = users.extra(
-            where=extra_where,
-            params=extra_params)
-
-    if users.query.sql_with_params() == base_user_query.query.sql_with_params():
-        users = base_user_query.none()
-
-    ctx['human_query'] = human_query
+    ctx['human_query'] = 'human_query'
     ctx['users'] = users
     ctx['request'] = request
     request.session['akcrm.query'] = request.GET.urlencode()
@@ -422,7 +451,7 @@ def _search(request):
         datetime.datetime.now(),
         request.user.username,
         request.GET.urlencode(),
-        users.query.sql_with_params(),
+        sql,  # users.query.sql_with_params(),
         num_results,
         connections['ak'].queries)
     log.close()
@@ -650,25 +679,3 @@ def search_csv(request):
     response['Content-Type'] = 'text/csv'
     response['Content-Disposition'] = 'attachment; filename=search.csv'
     return response
-
-
-def test_search(request):
-    first_name = 'ethan'
-    last_name = 'jucovy'
-
-    combined = reduce(q.combine_filters_and,
-                      [q.equal('first_name', first_name),
-                       q.equal('last_name', last_name),
-                       vertical_filter('name', 'skills',
-                                       'value', 'programming'),
-                       q.join('core_userfield cuf', 'cu.id = cuf.parent_id')],
-                      q.monoid())
-    sql = generate_sql(combined)
-    cursor = connections['ak'].cursor()
-    cursor.execute(sql, combined['parameters'])
-    results = cursor.fetchall()
-    html = ('<html><body><ul>' +
-            ''.join(['<li>%s</li>' % (', '.join(map(str, row)))
-                     for row in results]) +
-            '</ul></body></html>')
-    return HttpResponse(html)

@@ -1,42 +1,105 @@
-def monoid():
-    return dict(filters='',
-                joins='',
-                parameters=[],
+def thunk(value=None):
+    return lambda: value
+
+
+def monoid(filters=None, joins=None, parameters=None):
+    if filters is None:
+        filters = []
+    if joins is None:
+        joins = []
+    if parameters is None:
+        parameters = []
+    return dict(filters=thunk(filters),
+                joins=thunk(joins),
+                parameters=thunk(parameters),
                 )
 
 
-def combine_with_separator(separator, prop, acc, d):
-    value = d.get(prop, None)
-    if value is not None:
-        if acc.get(prop):
-            acc[prop] = acc[prop] + separator + value
-        else:
-            acc[prop] = value
+def evaluate_property(prop, specs):
+    thunks = filter(None, [spec.get(prop) for spec in specs])
+    values = [f() for f in thunks]
+    return values
+
+
+def combine(acc, f, prop, specs):
+    values = evaluate_property(prop, specs)
+    acc[prop] = thunk(f(values))
     return acc
 
 
-def combine_filters_and(acc, result):
-    acc = combine_with_separator(' AND ', 'filters', acc, result)
-    acc = combine_with_separator(', ', 'joins', acc, result)
-    acc['parameters'].extend(result.get('parameters', []))
+def concat_lists(lists):
+    return sum(lists, [])
+
+
+def unique_concat_lists(lists):
+    s = set()
+    acc = []
+    for l in lists:
+        for val in l:
+            if val not in s:
+                acc.append(val)
+                s.add(val)
     return acc
 
 
-def combine_filters_or(acc, result):
-    acc = combine_with_separator(' OR ', 'filters', acc, result)
-    acc = combine_with_separator(', ', 'joins', acc, result)
-    acc['parameters'].extend(result.get('parameters', []))
-    return acc
+def unpack(x):
+    assert isinstance(x, list), 'unknown value: %s' % x
+    assert len(x) == 1, "don't know how to merge"
+    return x[0]
+
+
+def lift(prop, f, specs):
+    return lambda acc: combine(acc, f, prop, specs)
+
+
+def combine_specs(specs, filter_fn=None, join_fn=None, param_fn=None):
+    if filter_fn is None:
+        filter_fn = unpack
+    if join_fn is None:
+        join_fn = unique_concat_lists
+    if param_fn is None:
+        param_fn = concat_lists
+    return reduce(
+        lambda acc, f: f(acc),
+        [lift('filters', filter_fn, specs),
+         lift('joins', join_fn, specs),
+         lift('parameters', param_fn, specs)],
+        monoid())
+
+
+def and_filters(filters):
+    filters = [f for f in filters if f]
+    return ' AND '.join(filters)
+
+
+def or_filters(filters):
+    if not filters:
+        return ''
+    filters = [f for f in filters if f]
+    if len(filters) == 1:
+        return filters[0]
+    return '(' + ' OR '.join(filters) + ')'
+
+
+def combine_filters_and(specs):
+    return combine_specs(specs, filter_fn=and_filters)
+
+
+def combine_filters_or(specs):
+    return combine_specs(specs, filter_fn=or_filters)
+
+
+def simple_filter(operand, column, value):
+    return dict(filters=thunk('%s %s %%s' % (column, operand)),
+                parameters=thunk([value]))
 
 
 def equal(column, value):
-    return dict(filters='%s = %%s' % column,
-                parameters=[value])
+    return simple_filter('=', column, value)
 
 
 def notequal(column, value):
-    return dict(filters='%s != %%s' % column,
-                parameters=[value])
+    return simple_filter('!=', column, value)
 
 
 def in_(column, values):
@@ -48,21 +111,35 @@ def in_(column, values):
         return equal(column, values[0])
     else:
         placeholder_string = ', '.join(['%s'] * len(values))
-        return dict(filters='%s IN (%s)' % (column, placeholder_string),
-                    parameters=values)
+        return dict(filters=thunk('%s IN (%s)' % (column, placeholder_string)),
+                    parameters=thunk(values))
+
+
+def like(column, value):
+    return dict(filters=thunk('%s LIKE %%s' % column),
+                parameters=thunk([value]))
 
 
 def vertical(key_column, key_value, value_column, value):
     return combine_filters_and(
-        equal(key_column, key_value),
-        in_(value_column, value))
+        [equal(key_column, key_value),
+         in_(value_column, value)])
+
+
+def between(column, low, high):
+    return dict(filters=thunk('%s BETWEEN %%s AND %%s' % column),
+                parameters=thunk(low, high))
 
 
 def join(table, join_spec, join_type='INNER'):
     return dict(
-        joins='%s JOIN %s ON %s' % (join_type, table, join_spec))
+        joins=thunk(['%s JOIN %s ON %s' % (join_type, table, join_spec)]))
 
 
-def generate_sql(spec):
-    return ('SELECT cu.* FROM core_user cu %s WHERE %s' % (
-            spec['joins'], spec['filters']))
+def user_sql(spec):
+    # joins is represented as a list of strings, and needs to be combined
+    joins = ' '.join(spec['joins']())
+    filters = spec['filters']()
+    return (('SELECT distinct cu.* FROM core_user cu %s WHERE %s' %
+             (joins, filters)),
+            spec['parameters']())
