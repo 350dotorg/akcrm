@@ -1,7 +1,3 @@
-def thunk(value=None):
-    return lambda: value
-
-
 def monoid(filters=None, joins=None, parameters=None):
     if filters is None:
         filters = []
@@ -9,21 +5,20 @@ def monoid(filters=None, joins=None, parameters=None):
         joins = []
     if parameters is None:
         parameters = []
-    return dict(filters=thunk(filters),
-                joins=thunk(joins),
-                parameters=thunk(parameters),
+    return dict(filters=filters,
+                joins=joins,
+                parameters=parameters,
                 )
 
 
 def evaluate_property(prop, specs):
-    thunks = filter(None, [spec.get(prop) for spec in specs])
-    values = [f() for f in thunks]
+    values = filter(None, [spec.get(prop) for spec in specs])
     return values
 
 
 def combine(acc, f, prop, specs):
     values = evaluate_property(prop, specs)
-    acc[prop] = thunk(f(values))
+    acc[prop] = f(values)
     return acc
 
 
@@ -90,8 +85,8 @@ def combine_filters_or(specs):
 
 
 def simple_filter(operand, column, value):
-    return dict(filters=thunk('%s %s %%s' % (column, operand)),
-                parameters=thunk([value]))
+    return dict(filters='%s %s %%s' % (column, operand),
+                parameters=[value])
 
 
 def equal(column, value):
@@ -111,13 +106,13 @@ def in_(column, values):
         return equal(column, values[0])
     else:
         placeholder_string = ', '.join(['%s'] * len(values))
-        return dict(filters=thunk('%s IN (%s)' % (column, placeholder_string)),
-                    parameters=thunk(values))
+        return dict(filters='%s IN (%s)' % (column, placeholder_string),
+                    parameters=values)
 
 
 def like(column, value):
-    return dict(filters=thunk('%s LIKE %%s' % column),
-                parameters=thunk([value]))
+    return dict(filters='%s LIKE %%s' % column,
+                parameters=[value])
 
 
 def vertical(key_column, key_value, value_column, value):
@@ -127,19 +122,19 @@ def vertical(key_column, key_value, value_column, value):
 
 
 def between(column, low, high):
-    return dict(filters=thunk('%s BETWEEN %%s AND %%s' % column),
-                parameters=thunk(low, high))
+    return dict(filters='%s BETWEEN %%s AND %%s' % column,
+                parameters=(low, high))
 
 
 def join(table, join_spec, join_type='INNER'):
     return dict(
-        joins=thunk(['%s JOIN %s ON %s' % (join_type, table, join_spec)]))
+        joins=['%s JOIN %s ON %s' % (join_type, table, join_spec)])
 
 
 def user_sql(spec):
     # joins is represented as a list of strings, and needs to be combined
-    joins = ' '.join(spec['joins']())
-    filters = spec['filters']()
+    joins = ' '.join(spec['joins'])
+    filters = spec['filters']
     return (('SELECT distinct cu.* FROM core_user cu %s WHERE %s' %
              (joins, filters)),
-            spec['parameters']())
+            spec['parameters'])
