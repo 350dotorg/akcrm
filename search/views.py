@@ -38,54 +38,6 @@ from akcrm.search.utils import zipcode_to_latlon
 import akcrm.search.query as q
 
 
-def make_default_user_query(query_data, values, search_on, extra_data={}):
-    """
-    given a query_data dict and values which come from the ui,
-    generate a dict that will be used for a user query
-
-    this default query is a within query, that optionally adds some
-    extra key/value data to the query dict
-    """
-
-    query = {}
-
-    query_str = query_data['query']
-    within = query_str + '__in'
-    query[within] = values
-
-    extra_info = query_data.get('extra')
-    if extra_info:
-        query.update(extra_info)
-
-    human_query = "%s is in %s" % (search_on, values)
-    return query, human_query
-
-def make_date_query(query_data, values, search_on, extra_data={}):
-    date = values[0]
-    match = dateutil.parser.parse(date)
-    human_query = "%s is in %s" % (search_on, values)
-    return {query_data['query']: match}, human_query
-
-def make_zip_radius_query(query_data, values, search_on, extra_data={}):
-    zipcode = values[0]
-    zipcode = int(zipcode)
-    if 'distance' in extra_data:
-        distance = extra_data['distance']
-        distance = float(distance)
-        assert distance > 0, "Bad distance"
-        latlon = zipcode_to_latlon(zipcode)
-        assert latlon is not None, "No location found for: %s" % zipcode
-        lat, lon = latlon
-        bbox = latlon_bbox(lat, lon, distance)
-        assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
-        lat1, lat2, lon1, lon2 = bbox
-        return ({'location__latitude__range': (lat1, lat2),
-                 'location__longitude__range': (lon1, lon2)},
-                "within %s miles of %s" % (distance, zipcode)
-                )
-    else:
-        return {'zip': zipcode}, "in zip code %s" % zipcode
-
 def make_contact_history_query(query_data, values, search_on, extra_data={}):
     contacted_since = values[0]
     match = dateutil.parser.parse(contacted_since)
