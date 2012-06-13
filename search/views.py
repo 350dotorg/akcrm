@@ -103,11 +103,11 @@ def make_contact_history_query(query_data, values, search_on, extra_data={}):
 
 
 def in_(column):
-    return lambda value, all_values: q._in(column, value)
+    return lambda value, request: q._in(column, value)
 
 
 def action_page_id():
-    def query(value, all_values):
+    def query(value, request):
         specs = [q.in_('cp.id', value),
                  q.join('core_action ca', 'ca.user_id=cu.id'),
                  q.join('core_page cp', 'ca.page_id=cp.id')]
@@ -116,7 +116,7 @@ def action_page_id():
 
 
 def action_page_pagetags_tag_in():
-    def query(value, all_values):
+    def query(value, request):
         specs = [q.in_('ct.id', value),
                  q.join('core_action ca', 'ca.user_id=cu.id'),
                  q.join('core_page cp', 'ca.page_id=cp.id'),
@@ -127,7 +127,7 @@ def action_page_pagetags_tag_in():
 
 
 def userfield_vertical(name):
-    def query(value, all_values):
+    def query(value, request):
         specs = [q.vertical('cuf.name', name, 'cuf.value', value),
                  q.join('core_userfield cuf', 'cu.id=cuf.parent_id')]
         return q.combine_specs(specs)
@@ -135,7 +135,7 @@ def userfield_vertical(name):
 
 
 def language():
-    def query(value, all_values):
+    def query(value, request):
         specs = [q.in_('cl.id', value),
                  q.join('core_language cl', 'cu.lang_id=cl.id')]
         return q.combine_specs(specs)
@@ -143,7 +143,7 @@ def language():
 
 
 def created_at(date_comparison):
-    def query(value, all_values):
+    def query(value, request):
         datespec = value[0]
         parsed_date = dateutil.parser.parse(datespec)
         return q.simple_filter(date_comparison, 'created_at', parsed_date)
@@ -151,11 +151,12 @@ def created_at(date_comparison):
 
 
 def zip_radius():
-    def query(value, all_values):
+    def query(value, request):
         zipcode = value[0]
         zipcode = int(zipcode)
-        assert 'distance' in all_values, "No distance found for zip query"
-        distance = all_values['distance']
+        err = "No distance found for zip query"
+        assert 'include:0_distance' in request.GET, err
+        distance = request.GET['include:0_distance']
         distance = float(distance)
         assert distance > 0, "Bad distance"
         latlon = zipcode_to_latlon(zipcode)
@@ -178,22 +179,21 @@ def contact_history():
 
 
 QUERIES = {
-    # callables that take the value and all request values
     'country': in_('cu.country'),
     'region': in_('cu.region'),
     'state': in_('cu.state'),
     'city': in_('cu.city'),
-    'action': action_page_id(),  # 'query': "actions__page__id",
+    'action': action_page_id(),
     'source': in_('cu.source'),
     'tag': action_page_pagetags_tag_in(),
     'organization': userfield_vertical('organization'),
     'skills': userfield_vertical('skills'),
     'engagement_level': userfield_vertical('engagement_level'),
-    'language': language(),  # 'query': "lang__id",
+    'language': language(),
     'created_before': created_at('<='),
     'created_after': created_at('>='),
-    'zipcode': zip_radius(),  # 'query_fn': make_zip_radius_query, },
-    'contacted_since': contact_history()  # 'query_fn': make_contact_history_query,
+    'zipcode': zip_radius(),
+    'contacted_since': contact_history(),
     }
 
 
@@ -383,7 +383,7 @@ def _search(request):
             query_fn = QUERIES.get(item, None)
             if query_fn is None:
                 continue
-            query = query_fn(possible_values, items)
+            query = query_fn(possible_values, request)
             queries_to_and.append(query)
 
         anded = q.combine_filters_and(queries_to_and)

@@ -123,7 +123,7 @@ def vertical(key_column, key_value, value_column, value):
 
 def between(column, low, high):
     return dict(filters='%s BETWEEN %%s AND %%s' % column,
-                parameters=(low, high))
+                parameters=[low, high])
 
 
 def join(table, join_spec, join_type='INNER'):
