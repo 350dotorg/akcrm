@@ -39,7 +39,7 @@ import akcrm.search.query as q
 
 
 def in_(column):
-    return lambda value, request: q._in(column, value)
+    return lambda value, request: q.in_(column, value)
 
 
 def action_page_id(value, request):
@@ -85,8 +85,8 @@ def zip_radius(value, request):
     zipcode = int(zipcode)
     err = "No distance found for zip query"
     assert 'include:0_distance' in request.GET, err
-    distance = request.GET['include:0_distance']
-    distance = float(distance)
+    distance_string = request.GET['include:0_distance']
+    distance = float(distance_string)
     assert distance > 0, "Bad distance"
     latlon = zipcode_to_latlon(zipcode)
     assert latlon is not None, "No location found for: %s" % zipcode
@@ -99,7 +99,9 @@ def zip_radius(value, request):
         q.between('cl.latitude', lat1, lat2),
         q.between('cl.longitude', lon1, lon2),
         q.join('core_location cl', 'cu.id=cl.user_id')]
-    return q.combine_filters_and(specs)
+    query = q.combine_filters_and(specs)
+    return q.combine_specs(
+        [query, q.human('%s miles from %s' % (distance_string, zipcode))])
 
 
 def contact_history(value, request):
@@ -379,7 +381,7 @@ def _search(request):
     ctx = dict(includes=includes,
                params=request.GET)
 
-    ctx['human_query'] = 'human_query'
+    ctx['human_query'] = all_combined['human']
     ctx['users'] = users
     ctx['request'] = request
     request.session['akcrm.query'] = request.GET.urlencode()
