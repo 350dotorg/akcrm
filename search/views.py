@@ -38,44 +38,24 @@ from akcrm.search.utils import zipcode_to_latlon
 import akcrm.search.query as q
 
 
-def make_contact_history_query(query_data, values, search_on, extra_data={}):
-    contacted_since = values[0]
-    match = dateutil.parser.parse(contacted_since)
-    search = ContactRecord.objects.filter(completed_at__gt=match)
-    human_query = ["contacted since %s" % contacted_since]
-    if 'contacted_by' in extra_data:
-        contacted_by = extra_data['contacted_by']
-        search = search.filter(user__username=contacted_by)
-        human_query.append("by %s" % contacted_by)
-    akids = list(search.values_list("akid", flat=True))
-    if len(akids) == 0:
-        ## TODO give a helpful error message, not a mysterious always-null query
-        akids = [0]
-    return {'id__in': akids}, " ".join(human_query)
-
-
 def in_(column):
     return lambda value, request: q._in(column, value)
 
 
-def action_page_id():
-    def query(value, request):
-        specs = [q.in_('cp.id', value),
-                 q.join('core_action ca', 'ca.user_id=cu.id'),
-                 q.join('core_page cp', 'ca.page_id=cp.id')]
-        return q.combine_specs(specs)
-    return query
+def action_page_id(value, request):
+    specs = [q.in_('cp.id', value),
+             q.join('core_action ca', 'ca.user_id=cu.id'),
+             q.join('core_page cp', 'ca.page_id=cp.id')]
+    return q.combine_specs(specs)
 
 
-def action_page_pagetags_tag_in():
-    def query(value, request):
-        specs = [q.in_('ct.id', value),
-                 q.join('core_action ca', 'ca.user_id=cu.id'),
-                 q.join('core_page cp', 'ca.page_id=cp.id'),
-                 q.join('core_page_tags cpt', 'cpt.page_id=cp.id'),
-                 q.join('core_tag ct', 'cpt.tag_id=ct.id')]
-        return q.combine_specs(specs)
-    return query
+def action_page_pagetags_tag_in(value, request):
+    specs = [q.in_('ct.id', value),
+             q.join('core_action ca', 'ca.user_id=cu.id'),
+             q.join('core_page cp', 'ca.page_id=cp.id'),
+             q.join('core_page_tags cpt', 'cpt.page_id=cp.id'),
+             q.join('core_tag ct', 'cpt.tag_id=ct.id')]
+    return q.combine_specs(specs)
 
 
 def userfield_vertical(name):
@@ -86,12 +66,10 @@ def userfield_vertical(name):
     return query
 
 
-def language():
-    def query(value, request):
-        specs = [q.in_('cl.id', value),
-                 q.join('core_language cl', 'cu.lang_id=cl.id')]
-        return q.combine_specs(specs)
-    return query
+def language(value, request):
+    specs = [q.in_('cl.id', value),
+             q.join('core_language cl', 'cu.lang_id=cl.id')]
+    return q.combine_specs(specs)
 
 
 def created_at(date_comparison):
@@ -102,32 +80,41 @@ def created_at(date_comparison):
     return query
 
 
-def zip_radius():
-    def query(value, request):
-        zipcode = value[0]
-        zipcode = int(zipcode)
-        err = "No distance found for zip query"
-        assert 'include:0_distance' in request.GET, err
-        distance = request.GET['include:0_distance']
-        distance = float(distance)
-        assert distance > 0, "Bad distance"
-        latlon = zipcode_to_latlon(zipcode)
-        assert latlon is not None, "No location found for: %s" % zipcode
-        lat, lon = latlon
-        bbox = latlon_bbox(lat, lon, distance)
-        err = "Bad bounding box for latlon: %s,%s" % (lat, lon)
-        assert bbox is not None, err
-        lat1, lat2, lon1, lon2 = bbox
-        specs = [
-            q.between('cl.latitude', lat1, lat2),
-            q.between('cl.longitude', lon1, lon2),
-            q.join('core_location cl', 'cu.id=cl.user_id')]
-        return q.combine_filters_and(specs)
-    return query
+def zip_radius(value, request):
+    zipcode = value[0]
+    zipcode = int(zipcode)
+    err = "No distance found for zip query"
+    assert 'include:0_distance' in request.GET, err
+    distance = request.GET['include:0_distance']
+    distance = float(distance)
+    assert distance > 0, "Bad distance"
+    latlon = zipcode_to_latlon(zipcode)
+    assert latlon is not None, "No location found for: %s" % zipcode
+    lat, lon = latlon
+    bbox = latlon_bbox(lat, lon, distance)
+    err = "Bad bounding box for latlon: %s,%s" % (lat, lon)
+    assert bbox is not None, err
+    lat1, lat2, lon1, lon2 = bbox
+    specs = [
+        q.between('cl.latitude', lat1, lat2),
+        q.between('cl.longitude', lon1, lon2),
+        q.join('core_location cl', 'cu.id=cl.user_id')]
+    return q.combine_filters_and(specs)
 
 
-def contact_history():
-    pass
+def contact_history(value, request):
+    contacted_since = value[0]
+    match = dateutil.parser.parse(contacted_since)
+    search = ContactRecord.objects.filter(completed_at__gt=match)
+    contacted_by = request.GET.get('contacted_by')
+    if contacted_by is not None:
+        search = search.filter(user__username=contacted_by)
+        human_query.append("by %s" % contacted_by)
+    akids = list(search.values_list("akid", flat=True))
+    if len(akids) == 0:
+        ## TODO give a helpful error message, not a mysterious always-null query
+        akids = [0]
+    return q.in_('id', akids)
 
 
 QUERIES = {
@@ -135,17 +122,17 @@ QUERIES = {
     'region': in_('cu.region'),
     'state': in_('cu.state'),
     'city': in_('cu.city'),
-    'action': action_page_id(),
+    'action': action_page_id,
     'source': in_('cu.source'),
-    'tag': action_page_pagetags_tag_in(),
+    'tag': action_page_pagetags_tag_in,
     'organization': userfield_vertical('organization'),
     'skills': userfield_vertical('skills'),
     'engagement_level': userfield_vertical('engagement_level'),
-    'language': language(),
+    'language': language,
     'created_before': created_at('<='),
     'created_after': created_at('>='),
-    'zipcode': zip_radius(),
-    'contacted_since': contact_history(),
+    'zipcode': zip_radius,
+    'contacted_since': contact_history,
     }
 
 
