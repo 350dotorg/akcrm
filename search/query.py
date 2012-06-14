@@ -1,14 +1,5 @@
-def monoid(filters=None, joins=None, parameters=None):
-    if filters is None:
-        filters = []
-    if joins is None:
-        joins = []
-    if parameters is None:
-        parameters = []
-    return dict(filters=filters,
-                joins=joins,
-                parameters=parameters,
-                )
+def monoid():
+    return dict(filters=[], joins=[], parameters=[])
 
 
 def evaluate_property(prop, specs):
