@@ -5,3 +5,4 @@ http://pypi.python.org/packages/source/M/MySQL-python/MySQL-python-1.2.3.tar.gz
 Fabric
 python-dateutil
 requests
+git+git://github.com/boldprogressives/django-testrunner-use_live_db.git
