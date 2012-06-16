@@ -93,10 +93,18 @@ def make_contact_history_query(users, query_data, values, search_on, extra_data=
 def make_emails_opened_query(users, query_data, values, search_on, extra_data={}):
     num_opens = values[0]
     num_opens = int(num_opens)
+    if 'since' in extra_data:
+        since = dateutil.parser.parse(extra_data['since'])
+        return (users.extra(where=["(SELECT COUNT(DISTINCT `mailing_id`) FROM `core_open`" +
+                                   " WHERE `core_open`.`user_id`=`core_user`.`id`" +
+                                   " AND `core_open`.`created_at` >= \"%s\")" % since +
+                                   " >= %s" % num_opens]),
+                "opened at least %s emails since %s" % (num_opens, since))
+
     return (users.extra(where=["(SELECT COUNT(DISTINCT `mailing_id`) FROM `core_open`" 
                                " WHERE `core_open`.`user_id`=`core_user`.`id`)" 
-                               " > %s" % num_opens]),
-            "emails opened > %s" % num_opens)
+                               " >= %s" % num_opens]),
+            "opened at least %s emails" % num_opens)
 
 QUERIES = {
     'country': {
@@ -339,10 +347,10 @@ def _search(request):
         _human_query = []
         for item in include_group[1]:
             ## "distance" is handled in a group with "zipcode", so we ignore it here
-            if item == "distance":
+            if item == "zipcode__distance":
                 continue
             ## same for "contacted_by", in a group with "contacted_since"
-            if item == "contacted_by":
+            if item == "contacted_since__contacted_by":
                 continue
 
             possible_values = request.GET.getlist(
@@ -356,7 +364,7 @@ def _search(request):
             # these two fields are together, if we have another case like this
             # we should probably formalize this
             if item == "zipcode":
-                distance = request.GET.get('%s_distance' % include_group[0])
+                distance = request.GET.get('%s_zipcode__distance' % include_group[0])
                 if distance:
                     extra_data['distance'] = distance
 
@@ -364,9 +372,14 @@ def _search(request):
             # these two fields are together, if we have another case like this
             # we should probably formalize this
             if item == "contacted_since":
-                contacted_by = request.GET.get('%s_contacted_by' % include_group[0])
+                contacted_by = request.GET.get('%s_contacted_since__contacted_by' % include_group[0])
                 if contacted_by:
                     extra_data['contacted_by'] = contacted_by
+
+            if item == "emails_opened":
+                since = request.GET.get('%s_emails_opened__since' % include_group[0])
+                if since:
+                    extra_data['since'] = since
 
             make_query_fn = query_data.get('query_fn', make_default_user_query)
             users, __human_query = make_query_fn(users, query_data, possible_values, item, extra_data)
