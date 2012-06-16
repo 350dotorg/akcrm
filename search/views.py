@@ -58,10 +58,13 @@ def action_page_pagetags_tag_in(value, request):
     return q.combine_specs(specs)
 
 
-def userfield_vertical(name):
+def userfield_vertical(name, n):
     def query(value, request):
-        specs = [q.vertical('cuf.name', name, 'cuf.value', value),
-                 q.join('core_userfield cuf', 'cu.id=cuf.parent_id')]
+        abbr = 'cuf%s' % n
+        specs = [q.vertical('%s.name' % abbr, name,
+                            '%s.value' % abbr, value),
+                 q.join('core_userfield %s' % abbr,
+                        'cu.id=%s.parent_id' % abbr)]
         return q.combine_specs(specs)
     return query
 
@@ -127,9 +130,9 @@ QUERIES = {
     'action': action_page_id,
     'source': in_('cu.source'),
     'tag': action_page_pagetags_tag_in,
-    'organization': userfield_vertical('organization'),
-    'skills': userfield_vertical('skills'),
-    'engagement_level': userfield_vertical('engagement_level'),
+    'organization': userfield_vertical('organization', 1),
+    'skills': userfield_vertical('skills', 2),
+    'engagement_level': userfield_vertical('engagement_level', 3),
     'language': language,
     'created_before': created_at('<='),
     'created_after': created_at('>='),
