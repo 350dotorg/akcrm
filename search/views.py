@@ -92,9 +92,11 @@ def make_contact_history_query(users, query_data, values, search_on, extra_data=
 
 def make_emails_opened_query(users, query_data, values, search_on, extra_data={}):
     num_opens = values[0]
-    search = """        
-SELECT count(distinct mailing_id) from core_open where core_open.user_id=core_user.id) > 30;
-"""
+    num_opens = int(num_opens)
+    return (users.extra(where=["(SELECT COUNT(DISTINCT `mailing_id`) FROM `core_open`" 
+                               " WHERE `core_open`.`user_id`=`core_user`.`id`)" 
+                               " > %s" % num_opens]),
+            "emails opened > %s" % num_opens)
 
 QUERIES = {
     'country': {
@@ -249,6 +251,7 @@ def home(request):
              ('source', 'Source'),
              ('tag', 'Is tagged with'),
              ('contacted_since', "Contacted Since"),
+             ('emails_opened', "Emails Opened"),
              ),
         'About':
             (('organization', "Organization"),
