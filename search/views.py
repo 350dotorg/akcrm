@@ -67,8 +67,8 @@ def userfield_vertical(name):
 
 
 def language(value, request):
-    specs = [q.in_('cl.id', value),
-             q.join('core_language cl', 'cu.lang_id=cl.id')]
+    specs = [q.in_('clang.id', value),
+             q.join('core_language clang', 'cu.lang_id=clang.id')]
     return q.combine_specs(specs)
 
 
@@ -96,9 +96,9 @@ def zip_radius(value, request):
     assert bbox is not None, err
     lat1, lat2, lon1, lon2 = bbox
     specs = [
-        q.between('cl.latitude', lat1, lat2),
-        q.between('cl.longitude', lon1, lon2),
-        q.join('core_location cl', 'cu.id=cl.user_id')]
+        q.between('cloc.latitude', lat1, lat2),
+        q.between('cloc.longitude', lon1, lon2),
+        q.join('core_location cloc', 'cu.id=cloc.user_id')]
     query = q.combine_filters_and(specs)
     return q.combine_specs(
         [query, q.human('%s miles from %s' % (distance_string, zipcode))])
