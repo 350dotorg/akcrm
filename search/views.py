@@ -27,7 +27,7 @@ from akcrm.search.utils import clamp
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
 
-def make_default_user_query(query_data, values, search_on, extra_data={}):
+def make_default_user_query(users, query_data, values, search_on, extra_data={}):
     """
     given a query_data dict and values which come from the ui,
     generate a dict that will be used for a user query
@@ -47,15 +47,15 @@ def make_default_user_query(query_data, values, search_on, extra_data={}):
         query.update(extra_info)
 
     human_query = "%s is in %s" % (search_on, values)
-    return query, human_query
+    return users.filter(**query), human_query
 
-def make_date_query(query_data, values, search_on, extra_data={}):
+def make_date_query(users, query_data, values, search_on, extra_data={}):
     date = values[0]
     match = dateutil.parser.parse(date)
     human_query = "%s is in %s" % (search_on, values)
-    return {query_data['query']: match}, human_query
+    return users.filter(**{query_data['query']: match}), human_query
 
-def make_zip_radius_query(query_data, values, search_on, extra_data={}):
+def make_zip_radius_query(users, query_data, values, search_on, extra_data={}):
     zipcode = values[0]
     zipcode = int(zipcode)
     if 'distance' in extra_data:
@@ -68,14 +68,14 @@ def make_zip_radius_query(query_data, values, search_on, extra_data={}):
         bbox = latlon_bbox(lat, lon, distance)
         assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
         lat1, lat2, lon1, lon2 = bbox
-        return ({'location__latitude__range': (lat1, lat2),
-                 'location__longitude__range': (lon1, lon2)},
+        return (users.filter(location__latitude__range=(lat1, lat2),
+                             location__longitude__range=(lon1, lon2)),
                 "within %s miles of %s" % (distance, zipcode)
                 )
     else:
-        return {'zip': zipcode}, "in zip code %s" % zipcode
+        return users.filter(zip=zipcode), "in zip code %s" % zipcode
 
-def make_contact_history_query(query_data, values, search_on, extra_data={}):
+def make_contact_history_query(users, query_data, values, search_on, extra_data={}):
     contacted_since = values[0]
     match = dateutil.parser.parse(contacted_since)
     search = ContactRecord.objects.filter(completed_at__gt=match)
@@ -88,9 +88,14 @@ def make_contact_history_query(query_data, values, search_on, extra_data={}):
     if len(akids) == 0:
         ## TODO give a helpful error message, not a mysterious always-null query
         akids = [0]
-    return {'id__in': akids}, " ".join(human_query)
+    return users.filter(id__in=akids), " ".join(human_query)
 
-        
+def make_emails_opened_query(users, query_data, values, search_on, extra_data={}):
+    num_opens = values[0]
+    search = """        
+SELECT count(distinct mailing_id) from core_open where core_open.user_id=core_user.id) > 30;
+"""
+
 QUERIES = {
     'country': {
         'query': "country",
@@ -142,8 +147,10 @@ QUERIES = {
     'contacted_since': {
         'query_fn': make_contact_history_query,
         },
+    'emails_opened': {
+        'query_fn': make_emails_opened_query,
+        },
     }
-
 
 @allow_http("GET")
 def countries(request):
@@ -359,9 +366,7 @@ def _search(request):
                     extra_data['contacted_by'] = contacted_by
 
             make_query_fn = query_data.get('query_fn', make_default_user_query)
-            query, __human_query = make_query_fn(query_data, possible_values, item, extra_data)
-
-            users = users.filter(**query)
+            users, __human_query = make_query_fn(users, query_data, possible_values, item, extra_data)
             _human_query.append(__human_query)
 
         if not _human_query or (
