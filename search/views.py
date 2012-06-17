@@ -372,10 +372,10 @@ def _search(request):
     users = parse_users_from_results(results, cursor_fields())
 
     user_ids = [user['id'] for user in users.values()]
-    placeholder_string = ', '.join(['%s'] * len(user_ids))
+    placeholder = ', '.join(['%s'] * len(user_ids))
 
     if user_ids:
-        sql = 'SELECT * FROM core_phone WHERE user_id IN (%s)'
+        sql = 'SELECT * FROM core_phone WHERE user_id IN (%s)' % placeholder
         cursor.execute(sql, user_ids)
         results = cursor.fetchall()
         for result in results:
@@ -384,7 +384,8 @@ def _search(request):
             user['phones'].append(phone)
             user['phone'] = user['phones'][0]
 
-        sql = 'SELECT * FROM core_userfield WHERE parent_id IN (%s)'
+        sql = ('SELECT * FROM core_userfield WHERE parent_id IN (%s)'
+                % placeholder)
         cursor.execute(sql, user_ids)
         results = cursor.fetchall()
         for result in results:
