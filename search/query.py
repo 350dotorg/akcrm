@@ -176,12 +176,8 @@ def join(table, join_spec, join_type='INNER'):
 def user_sql(spec):
     # joins is represented as a list of strings, and needs to be combined
     # manually join with core_userfield and phone
-    spec = combine_specs([
-            spec,
-            join('core_userfield cuf', 'cu.id=cuf.parent_id', 'LEFT OUTER'),
-            join('core_phone cp', 'cu.id=cp.user_id', 'LEFT OUTER')])
     joins = ' '.join(spec['joins'])
     filters = spec['filters']
-    return (('SELECT cu.*, cp.*, cuf.* FROM core_user cu %s WHERE %s' %
+    return (('SELECT distinct cu.* FROM core_user cu %s WHERE %s' %
              (joins, filters)),
             spec['parameters'])

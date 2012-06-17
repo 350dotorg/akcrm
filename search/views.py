@@ -307,34 +307,15 @@ def search_just_akids(request):
     return HttpResponse(akids, content_type="text/plain")
 
 
-def into_pieces(result):
-    return result[:23], result[23:31], result[31:]
-
-
-def parse_users_from_results(results, description):
-    # user, phone, userfield fields
-    ufs, pfs, uffs = into_pieces([d[0] for d in description])
-    create_mapping = lambda fields, data: dict(zip(fields, data))
+def parse_users_from_results(results, user_fields):
     users = {}
     for result in results:
-        # user, phone, userfield data
-        ud, pd, ufd = into_pieces(result)
-        user_map = create_mapping(ufs, ud)
-        phone_map = create_mapping(pfs, pd)
-        userfield_map = create_mapping(uffs, ufd)
-
-        user = users.setdefault(user_map['id'], {})
-        user.update(user_map)
+        user = dict(zip(user_fields, result))
         user['url'] = '/record/%s/' % user['id']
         user['name'] = '%s %s' % (user['first_name'], user['last_name'])
-
-        phone = user.setdefault('phone', {})
-        if phone_map['id'] is not None:
-            phone.update(phone_map)
-
-        fields = user.setdefault('fields', {})
-        if userfield_map['id'] is not None:
-            fields[userfield_map['name']] = userfield_map['value']
+        user['phones'] = []
+        user['fields'] = {}
+        users[user['id']] = user
     return users
 
 
@@ -384,9 +365,32 @@ def _search(request):
     sql, parameters = q.user_sql(all_combined)
 
     cursor = connections['ak'].cursor()
+    cursor_fields = lambda : [d[0] for d in cursor.description]
+
     cursor.execute(sql, parameters)
     results = cursor.fetchall()
-    users = parse_users_from_results(results, cursor.description)
+    users = parse_users_from_results(results, cursor_fields())
+
+    user_ids = [user['id'] for user in users.values()]
+    placeholder_string = ', '.join(['%s'] * len(user_ids))
+
+    if user_ids:
+        sql = 'SELECT * FROM core_phone WHERE user_id IN (%s)'
+        cursor.execute(sql, user_ids)
+        results = cursor.fetchall()
+        for result in results:
+            phone = dict(zip(cursor_fields(), result))
+            user = users[phone['user_id']]
+            user['phones'].append(phone)
+            user['phone'] = user['phones'][0]
+
+        sql = 'SELECT * FROM core_userfield WHERE parent_id IN (%s)'
+        cursor.execute(sql, user_ids)
+        results = cursor.fetchall()
+        for result in results:
+            userfield = dict(zip(cursor_fields(), result))
+            user = users[userfield['parent_id']]
+            user['fields'][userfield['name']] = userfield['value']
 
     ctx = dict(includes=includes,
                params=request.GET)
