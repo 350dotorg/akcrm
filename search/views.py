@@ -307,6 +307,37 @@ def search_just_akids(request):
     return HttpResponse(akids, content_type="text/plain")
 
 
+def into_pieces(result):
+    return result[:23], result[23:31], result[31:]
+
+
+def parse_users_from_results(results, description):
+    # user, phone, userfield fields
+    ufs, pfs, uffs = into_pieces([d[0] for d in description])
+    create_mapping = lambda fields, data: dict(zip(fields, data))
+    users = {}
+    for result in results:
+        # user, phone, userfield data
+        ud, pd, ufd = into_pieces(result)
+        user_map = create_mapping(ufs, ud)
+        phone_map = create_mapping(pfs, pd)
+        userfield_map = create_mapping(uffs, ufd)
+
+        user = users.setdefault(user_map['id'], {})
+        user.update(user_map)
+        user['url'] = '/record/%s/' % user['id']
+        user['name'] = '%s %s' % (user['first_name'], user['last_name'])
+
+        phone = user.setdefault('phone', {})
+        if phone_map['id'] is not None:
+            phone.update(phone_map)
+
+        fields = user.setdefault('fields', {})
+        if userfield_map['id'] is not None:
+            fields[userfield_map['name']] = userfield_map['value']
+    return users
+
+
 def _search(request):
     includes = []
 
@@ -352,40 +383,16 @@ def _search(request):
 
     sql, parameters = q.user_sql(all_combined)
 
-    users = list(CoreUser.objects.db_manager('ak').raw(sql, parameters))
-
-    #cursor = connections['ak'].cursor()
-    #cursor.execute(sql, parameters)
-    #results = cursor.fetchall()
-    #users = [CoreUser(*result) for result in results]
-
-
-#    user_ids = [u.id for u in users]
-#    phones = CorePhone.objects.using('ak').filter(user_id__in=user_ids)
-#    user_id_phones_map = {}
-#    for phone in phones:
-#        user_id_phones_map.setdefault(phone.user_id, []).append(phone)
-#
-#    userfields = CoreUserField.objects.using('ak').filter(
-#        parent_id__in=user_ids)
-#    user_id_fields_map = {}
-#    for uf in userfields:
-#        user_id_fields_map.setdefault(uf.parent_id, []).append(uf)
-#
-#    for user in users:
-#        phones = user_id_phones_map.get(user.id)
-#        if phones:
-#            user.phones = phones
-#        fields = user_id_fields_map.get(user.id)
-#        if fields:
-#            user.fields = fields
-
+    cursor = connections['ak'].cursor()
+    cursor.execute(sql, parameters)
+    results = cursor.fetchall()
+    users = parse_users_from_results(results, cursor.description)
 
     ctx = dict(includes=includes,
                params=request.GET)
 
     ctx['human_query'] = all_combined['human']
-    ctx['users'] = users
+    ctx['users'] = users.values()
     ctx['request'] = request
     request.session['akcrm.query'] = request.GET.urlencode()
     num_results = len(users)

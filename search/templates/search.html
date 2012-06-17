@@ -189,11 +189,11 @@
   {% for user in users %}
   {% ifchanged user %}
   <tr id="user_{{ user.id }}" class="gradeA">
-    <td><a class="expand" href="{{ user.get_absolute_url }}">
-	{{ user|default:"" }}</a></td>
-    <td><a class="expand" href="{{ user.get_absolute_url }}">
+    <td><a class="expand" href="{{ user.url }}">
+	{{ user.name|default:"" }}</a></td>
+    <td><a class="expand" href="{{ user.url }}">
 	{{ user.email|default:"" }}</a></td>
-    <td>{{ user.phone|default:"" }}</td>
+    <td>{{ user.phone.phone|default:"" }}</td>
     <td>{{ user.country|default:"" }}</td>
     <td>{{ user.state|default:"" }}</td>
     <td>{{ user.city|default:"" }}</td>
