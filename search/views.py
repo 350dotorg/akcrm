@@ -328,9 +328,10 @@ def parse_users_from_results(results, description):
         user['url'] = '/record/%s/' % user['id']
         user['name'] = '%s %s' % (user['first_name'], user['last_name'])
 
-        phone = user.setdefault('phone', {})
+        phones = user.setdefault('phones', [])
         if phone_map['id'] is not None:
-            phone.update(phone_map)
+            phones.append(phone_map)
+            user['phone'] = phones[0]
 
         fields = user.setdefault('fields', {})
         if userfield_map['id'] is not None:
