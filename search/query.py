@@ -178,6 +178,5 @@ def user_sql(spec):
     # manually join with core_userfield and phone
     joins = ' '.join(spec['joins'])
     filters = spec['filters']
-    return (('SELECT distinct cu.* FROM core_user cu %s WHERE %s' %
-             (joins, filters)),
-            spec['parameters'])
+    query = 'SELECT distinct cu.* FROM core_user cu %s WHERE %s ORDER BY cu.id'
+    return (query % (joins, filters), spec['parameters'])
