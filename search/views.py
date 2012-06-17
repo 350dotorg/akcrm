@@ -379,7 +379,7 @@ def _search(request):
         additional_filters_to_and.append(query)
 
     additional_anded = q.combine_filters_and(additional_filters_to_and)
-    all_combined = q.combine_filters_or([ored, additional_anded])
+    all_combined = q.combine_filters_and([ored, additional_anded])
 
     sql, parameters = q.user_sql(all_combined)
 
