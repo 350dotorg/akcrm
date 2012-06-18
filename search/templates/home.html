@@ -282,15 +282,29 @@ console.log(anchor);
 
   <input
      type="text"
+     id="template_emails_opened"
+     name="emails_opened"
+     data-paired-with="emails_opened__since"
+     />
+
+  <input
+     type="text"
+     id="template_emails_opened__since"
+     name="emails_opened__since"
+     placeholder="MM/DD/YYYY"
+     />
+
+  <input
+     type="text"
      id="template_contacted_since"
      name="contacted_since"
-     data-paired-with="contacted_by"
+     data-paired-with="contacted_since__contacted_by"
      placeholder="MM/DD/YYYY"
      />
 
   <input type="text"
-	 id="template_contacted_by"
-	 name="contacted_by"
+	 id="template_contacted_since__contacted_by"
+	 name="contacted_since__contacted_by"
 	 placeholder="Contacted by:"
 	 />
 
@@ -298,14 +312,14 @@ console.log(anchor);
      id="template_zipcode"
      type="text"
      name="zipcode"
-     data-paired-with="distance"
+     data-paired-with="zipcode__distance"
      placeholder="Zip Code"
      />
 
   <input
-     id="template_distance"
+     id="template_zipcode__distance"
      type="text"
-     name="distance"
+     name="zipcode__distance"
      style="margin-left: 10px"
      placeholder="Distance in miles"
      />
