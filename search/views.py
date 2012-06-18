@@ -93,18 +93,13 @@ def make_contact_history_query(users, query_data, values, search_on, extra_data=
 def make_emails_opened_query(users, query_data, values, search_on, extra_data={}):
     num_opens = values[0]
     num_opens = int(num_opens)
+    human = "opened at least %s emails" % num_opens
     if 'since' in extra_data:
         since = dateutil.parser.parse(extra_data['since'])
-        return (users.extra(where=["(SELECT COUNT(DISTINCT `mailing_id`) FROM `core_open`" +
-                                   " WHERE `core_open`.`user_id`=`core_user`.`id`" +
-                                   " AND `core_open`.`created_at` >= \"%s\")" % since +
-                                   " >= %s" % num_opens]),
-                "opened at least %s emails since %s" % (num_opens, since))
-
-    return (users.extra(where=["(SELECT COUNT(DISTINCT `mailing_id`) FROM `core_open`" 
-                               " WHERE `core_open`.`user_id`=`core_user`.`id`)" 
-                               " >= %s" % num_opens]),
-            "opened at least %s emails" % num_opens)
+        users = users.filter(email_opens__created_at__gte=since)
+        human += " since %s" % since
+    users = users.annotate(num_opens=Count('email_opens'))
+    return users.filter(num_opens__gte=num_opens), human
 
 
 def make_more_actions_since_query(users, query_data, values, search_on, extra_data={}):

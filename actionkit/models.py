@@ -241,7 +241,7 @@ class CoreClick(models.Model):
         managed = False
 
 class CoreOpen(models.Model):
-    user = models.ForeignKey(CoreUser)
+    user = models.ForeignKey(CoreUser, related_name="email_opens")
     mailing = models.ForeignKey(CoreMailing)
     created_at = models.DateTimeField(primary_key=True)
     class Meta:
