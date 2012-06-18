@@ -106,6 +106,19 @@ def make_emails_opened_query(users, query_data, values, search_on, extra_data={}
                                " >= %s" % num_opens]),
             "opened at least %s emails" % num_opens)
 
+
+def make_more_actions_since_query(users, query_data, values, search_on, extra_data={}):
+    num_actions = values[0]
+    num_actions = int(num_actions)
+    human = 'more than %s actions' % num_actions
+    if 'since' in extra_data:
+        since = dateutil.parser.parse(extra_data['since'])
+        users = users.filter(actions__created_at__gte=since)
+        human += ' since %s' % extra_data['since']
+    users = users.annotate(num_actions=Count('actions'))
+    return (users.filter(num_actions__gt=num_actions), human)
+
+
 QUERIES = {
     'country': {
         'query': "country",
@@ -159,6 +172,9 @@ QUERIES = {
         },
     'emails_opened': {
         'query_fn': make_emails_opened_query,
+        },
+    'more_actions': {
+        'query_fn': make_more_actions_since_query,
         },
     }
 
@@ -260,6 +276,7 @@ def home(request):
              ('tag', 'Is tagged with'),
              ('contacted_since', "Contacted Since"),
              ('emails_opened', "Emails Opened"),
+             ('more_actions', "More Actions Since"),
              ),
         'About':
             (('organization', "Organization"),
@@ -352,6 +369,9 @@ def _search(request):
             ## same for "contacted_by", in a group with "contacted_since"
             if item == "contacted_since__contacted_by":
                 continue
+            ## ditto
+            if item == 'more_actions__since':
+                continue
 
             possible_values = request.GET.getlist(
                 "%s_%s" % (include_group[0], item))
@@ -378,6 +398,10 @@ def _search(request):
 
             if item == "emails_opened":
                 since = request.GET.get('%s_emails_opened__since' % include_group[0])
+                if since:
+                    extra_data['since'] = since
+            if item == "more_actions":
+                since = request.GET.get('%s_more_actions__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
 
