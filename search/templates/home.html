@@ -217,6 +217,16 @@ console.log(anchor);
     {% endfor %}
   </select>
 
+  <select id="template_not_action"
+    name="not_action" multiple="multiple">
+    <option value=""></option>
+    {% for item in pages %}
+    <option value="{{ item.id }}">
+      {{ item }}
+    </option>
+    {% endfor %}
+  </select>
+
   <input
      id="template_source"
      type="text"

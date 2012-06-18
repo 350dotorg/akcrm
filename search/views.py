@@ -119,6 +119,12 @@ def make_more_actions_since_query(users, query_data, values, search_on, extra_da
     return (users.filter(num_actions__gt=num_actions), human)
 
 
+def make_not_action_query(users, query_data, values, search_on, extra_data={}):
+    human = 'action is not in %s' % values
+    query_dict = {query_data['query'] + '__in': values}
+    return (users.exclude(**query_dict), human)
+
+
 QUERIES = {
     'country': {
         'query': "country",
@@ -134,6 +140,10 @@ QUERIES = {
         },
     'action': {
         'query': "actions__page__id",
+        },
+    'not_action': {
+        'query': "actions__page__id",
+        'query_fn': make_not_action_query,
         },
     'source': {
         'query': "source",
@@ -272,6 +282,7 @@ def home(request):
              ),
         'Activity':
             (('action', 'Took part in action'),
+             ('not_action', 'Did not take part in action'),
              ('source', 'Source'),
              ('tag', 'Is tagged with'),
              ('contacted_since', "Contacted Since"),
