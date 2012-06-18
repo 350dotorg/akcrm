@@ -98,7 +98,7 @@ def make_emails_opened_query(users, query_data, values, search_on, extra_data={}
         since = dateutil.parser.parse(extra_data['since'])
         users = users.filter(email_opens__created_at__gte=since)
         human += " since %s" % since
-    users = users.annotate(num_opens=Count('email_opens'))
+    users = users.annotate(num_opens=Count('email_opens', distinct=True))
     return users.filter(num_opens__gte=num_opens), human
 
 
@@ -110,7 +110,7 @@ def make_more_actions_since_query(users, query_data, values, search_on, extra_da
         since = dateutil.parser.parse(extra_data['since'])
         users = users.filter(actions__created_at__gte=since)
         human += ' since %s' % extra_data['since']
-    users = users.annotate(num_actions=Count('actions'))
+    users = users.annotate(num_actions=Count('actions', distinct=True))
     return (users.filter(num_actions__gt=num_actions), human)
 
 
