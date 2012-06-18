@@ -676,6 +676,9 @@ def user_to_csv_row(user, fields):
     row = []
     for field in fields:
         value = getattr(user, field, '')
+        # phone is only callable field so far
+        if callable(value):
+            value = value()
         row.append(value)
     return row
 
@@ -687,7 +690,7 @@ def search_csv(request):
     user_fields = ['first_name', 'last_name', 'email',
                    'address1', 'address2', 'city', 'state', 'region',
                    'postal', 'zip', 'country',
-                   'source', 'subscription_status']
+                   'source', 'subscription_status', 'phone']
     fields = request.GET.getlist('fields')
     if not fields:
         return dict(fields=user_fields,
