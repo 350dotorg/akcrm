@@ -5,6 +5,7 @@ from actionkit import rest
 from django.conf import settings
 from django.db import connections
 from django.db.models import Count
+from django.db.models import Sum
 from djangohelpers import rendered_with, allow_http
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
@@ -114,6 +115,30 @@ def make_more_actions_since_query(users, query_data, values, search_on, extra_da
     return (users.filter(num_actions__gt=num_actions), human)
 
 
+def make_donated_more_than_query(users, query_data, values, search_on, extra_data={}):
+    human = 'has donated more than %s' % values[0]
+    total_donated = float(values[0])
+    if 'since' in extra_data:
+        since = dateutil.parser.parse(extra_data['since'])
+        users = users.filter(orders__created_at__gte=since)
+        human += ' since %s' % extra_data['since']
+    users = users.filter(orders__status='completed')
+    users = users.annotate(total_orders=Sum('orders__total'))
+    return (users.filter(total_orders__gte=total_donated), human)
+
+
+def make_donated_times_query(users, query_data, values, search_on, extra_data={}):
+    human = 'has donated more than %s times' % values[0]
+    times_donated = int(values[0])
+    if 'since' in extra_data:
+        since = dateutil.parser.parse(extra_data['since'])
+        users = users.filter(orders__created_at__gte=since)
+        human += ' since %s' % extra_data['since']
+    users = users.filter(orders__status='completed')
+    users = users.annotate(n_orders=Count('orders', distinct=True))
+    return (users.filter(n_orders__gte=times_donated), human)
+
+
 def make_not_action_query(users, query_data, values, search_on, extra_data={}):
     human = 'action is not in %s' % values
     query_dict = {query_data['query'] + '__in': values}
@@ -180,6 +205,12 @@ QUERIES = {
         },
     'more_actions': {
         'query_fn': make_more_actions_since_query,
+        },
+    'donated_more': {
+        'query_fn': make_donated_more_than_query,
+        },
+    'donated_times': {
+        'query_fn': make_donated_times_query,
         },
     }
 
@@ -283,6 +314,8 @@ def home(request):
              ('contacted_since', "Contacted Since"),
              ('emails_opened', "Emails Opened"),
              ('more_actions', "More Actions Since"),
+             ('donated_more', "Donated Amount More Than"),
+             ('donated_times', "Donated Times More Than"),
              ),
         'About':
             (('organization', "Organization"),
@@ -408,6 +441,14 @@ def _search(request):
                     extra_data['since'] = since
             if item == "more_actions":
                 since = request.GET.get('%s_more_actions__since' % include_group[0])
+                if since:
+                    extra_data['since'] = since
+            if item == "donated_more":
+                since = request.GET.get('%s_donated_more__since' % include_group[0])
+                if since:
+                    extra_data['since'] = since
+            if item == "donated_times":
+                since = request.GET.get('%s_donated_times__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
 
