@@ -19,6 +19,7 @@ urlpatterns = patterns(
     url(r'^search/json/$', 'search_json', name='search_json'),
 
     url(r'^search/sql/$', 'search_raw_sql', name='search_raw_sql'),
+    url(r'^search/count/$', 'search_count', name='search_count'),
     url(r'^search/akids/$', 'search_just_akids', name='search_just_akids'),
     url(r'^search/csv/$', 'search_csv', name='search_csv'),
 

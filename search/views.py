@@ -7,6 +7,7 @@ from django.db import connections
 from django.db.models import Count
 from django.db.models import Sum
 from djangohelpers import rendered_with, allow_http
+from djangohelpers.templatetags.helpful_tags import qsify
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
@@ -331,9 +332,22 @@ def home(request):
 @allow_http("GET")
 @rendered_with("search.html")
 def search(request):
+    if request.GET.get("count_submit"):
+        resp = redirect("search_count")
+        resp['Location'] += "%s" % qsify(request.GET)
+        return resp
     ctx = _search(request)
     users = ctx['users']
 
+    return ctx
+
+@allow_http("GET")
+@rendered_with("search_count.html")
+def search_count(request):
+    ctx = _search(request)
+    users = ctx.pop('users')
+    num_users = users.count()
+    ctx['num_users'] = num_users
     return ctx
 
 @allow_http("GET")
