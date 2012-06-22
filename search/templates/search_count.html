@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load helpful_tags verbatim %}
+
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  {% if request.PERMISSIONS.add_allowed_tags %}
+  <li><a href="{% url allowed_tags %}">Manage Tags</a></li>
+  {% endif %}
+  <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">Get Raw SQL for ActionKit Mailings</a></li>
+  <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">Get AKIDs for Actionkit Includes/Excludes</a></li>
+  {% endblock %}
+
+  {% block content %}
+  <h1>Found: <span id="num_results">{{ num_users }}</span> people</h1>
+<div class="results-header">
+  Searched for people who match::
+  <pre>{{ human_query }}</pre>
+</div>
+
+{% replace_value of "count_submit" with "" in request.GET as search_params %}
+<a class="btn" href="{% url search %}{{ search_params|qsify }}">View full results</a>
+
+{% endblock %}
+
+</body>
+</html>
