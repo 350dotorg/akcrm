@@ -1,0 +1,7 @@
+The following magic groups influence users' permissions:
+
+ * add_contact_record
+ * add_allowed_tags
+ * edit_user
+ * search_export
+ * unrestricted_detag
