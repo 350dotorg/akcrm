@@ -184,7 +184,7 @@ class CoreTag(models.Model):
 class CorePageTag(models.Model):
     id = models.IntegerField(primary_key=True)
     page = models.ForeignKey(CorePage, related_name="pagetags")
-    tag = models.ForeignKey(CoreTag)
+    tag = models.ForeignKey(CoreTag, related_name="pagetags")
     class Meta:
         db_table = u'core_page_tags'
         managed = False

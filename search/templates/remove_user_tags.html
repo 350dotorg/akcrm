@@ -33,6 +33,24 @@
     {% endfor %}
   </ul>
 
+  In addition, the following tags will no longer be associated with the user:
+
+  <ul>
+    {% for tag in orphaned_tags %}
+    <li>{{ tag.name }}</li>
+    {% endfor %}
+  </ul>
+
+  Meanwhile, the following tags will continue to be associated with the user:
+
+  <ul>
+    {% for tag in affected_actions_tags %}
+    {% if tag not in orphaned_tags %}
+    <li>{{ tag.name }}</li>
+    {% endif %}
+    {% endfor %}
+  </ul>
+
 </div>
 {% endblock %}
 
