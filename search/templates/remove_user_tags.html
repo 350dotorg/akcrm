@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script type="text/javascript" 
+	src="/static/chosen/chosen.jquery.js"></script>
+<link rel="stylesheet" type="text/css" 
+      href="/static/jquery/jquery.autocomplete.css" />
+<script type="text/javascript" 
+	src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
+<link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
+<script type="text/javascript">
+  $(window).load(function() {
+    return;
+  });
+</script>
+{% endblock %}
+
+{% block nav %}
+<li><a href="/">New Search</a></li>
+<li class="active"><a href="{% url allowed_tags %}">Manage Tags</a></li>
+{% endblock %}
+
+{% block content %}
+<h1>Remove Tag "{{ tag.name }}" From User {{ user }}</h1>
+
+<div class="span12">
+  <strong>Are you sure?</strong>
+  To remove this tag, we'll have to <strong>delete the following actions</strong> by the user:
+
+  <ul>
+    {% for action in affected_actions %}
+    <li>{{ action.created_at|date }} on {{ action.page.name }}</li>
+    {% endfor %}
+  </ul>
+
+</div>
+{% endblock %}
+

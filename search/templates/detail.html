@@ -306,14 +306,21 @@
 	{% for tag in agent_tags %}
 	<li id="{{ tag.name }}">
 	  {{ tag.name }}
-	  {% if request.PERMISSIONS.edit_user and tag.editable %}
+	  {% if tag.editable %}
+	  {% if request.PERMISSIONS.edit_user %}
 	  <a data-tag-name="{{ tag.name }}"
 	     class="btn" href="#"><i class="icon-minus-sign"></i></a>
 	  <form class="remove_tag" method="POST" 
-		action="{% url remove_user_tag agent.id tag.allowed_tag_id %}">
+		action="{% url remove_user_tag_safe agent.id tag.ak_tag_id %}">
 	    {% csrf_token %}
 	    <input type="submit" class="btn" />
 	  </form>
+	  {% endif %}
+	  {% else %}
+	  {% if request.PERMISSIONS.unrestricted_detag %}
+	  <a class="btn" href="{% url remove_user_tag_unsafe agent.id tag.ak_tag_id %}">
+	    <i class="icon-minus-sign"></i></a>
+	  {% endif %}
 	  {% endif %}
 	</li>
 	{% endfor %}

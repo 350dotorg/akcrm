@@ -651,10 +651,27 @@ def add_user_tag(request, user_id, tag_id):
         return HttpResponse(action['action']['id'])
     return redirect("detail", user_id)
 
+def remove_user_tag(request, user_id, tag_id):
+    ## disambiguate and redirect
+    pass
+
+@authorize("unrestricted_detag")
+@allow_http("GET", "POST")
+@rendered_with("remove_user_tags.html")
+def remove_user_tag_unsafe(request, user_id, tag_id):
+    tag = get_object_or_404(CoreTag.objects.using("ak"), id=tag_id)
+    user = get_object_or_404(CoreUser.objects.using("ak"), id=user_id)
+    affected_actions = CoreAction.objects.using("ak").filter(
+        page__pagetags__tag__id=tag_id, user__id=user_id).select_related("page")
+    ## TODO: check whether any OTHER tags will be removed from the user as a consequence
+    if request.method == "GET":
+        return locals()
+    
+
 @authorize("edit_user")
 @allow_http("POST")
-def remove_user_tag(request, user_id, tag_id):
-    allowed_tag = get_object_or_404(AllowedTag, id=tag_id)
+def remove_user_tag_safe(request, user_id, tag_id):    
+    allowed_tag = get_object_or_404(AllowedTag, ak_tag_id=tag_id)
     action = get_object_or_404(CoreAction.objects.using("ak"),
                                page__id=allowed_tag.ak_page_id,
                                user__id=user_id)

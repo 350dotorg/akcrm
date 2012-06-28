@@ -33,6 +33,11 @@ urlpatterns = patterns(
         name='add_user_tag'),
     url(r'^record/(?P<user_id>\d+)/tags/(?P<tag_id>\d+)/remove/$', 'remove_user_tag',
         name='remove_user_tag'),
+
+    url(r'^record/(?P<user_id>\d+)/tags/s/(?P<tag_id>\d+)/remove/$', 'remove_user_tag_safe',
+        name='remove_user_tag_safe'),
+    url(r'^record/(?P<user_id>\d+)/tags/u/(?P<tag_id>\d+)/remove/$', 'remove_user_tag_unsafe',
+        name='remove_user_tag_unsafe'),
     
     url(r'^record/(?P<user_id>\d+)/mailing_history/$', 
         'mailing_history', name='mailing_history'),
