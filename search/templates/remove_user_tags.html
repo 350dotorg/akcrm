@@ -51,6 +51,13 @@
     {% endfor %}
   </ul>
 
+  If you really want to do this, type the total number of actions that will be deleted into the box below and click the big red button.
+  <form method="POST">
+    {% csrf_token %}
+    <input type="text" name="are_you_sure" />
+    <input type="submit" value="Remove user tag" class="btn danger" />
+  </form>
+
 </div>
 {% endblock %}
 

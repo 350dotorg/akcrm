@@ -605,7 +605,7 @@ def _detail(request, user_id):
     _allowed_tags = AllowedTag.objects.all()
     allowed_tags = dict([(t.ak_tag_id, t) for t in _allowed_tags])
     _agent_tags = CoreTag.objects.using("ak").filter(
-        corepagetag__page__coreaction__user=agent).values("name", "id", "corepagetag__page_id")
+        pagetags__page__coreaction__user=agent).values("name", "id", "pagetags__page_id")
 
     agent_tags = []
     
@@ -613,7 +613,7 @@ def _detail(request, user_id):
         editable = False
         allowed_tag_id = None
         if (tag['id'] in allowed_tags
-            and allowed_tags[tag['id']].ak_page_id == tag['corepagetag__page_id']):
+            and allowed_tags[tag['id']].ak_page_id == tag['pagetags__page_id']):
             editable = True
             allowed_tag_id = allowed_tags[tag['id']].id
         agent_tags.append(AgentTag(tag['name'], tag['id'], editable, allowed_tag_id))
@@ -677,7 +677,23 @@ def remove_user_tag_unsafe(request, user_id, tag_id):
             if not other_actions:
                 orphaned_tags.add(tag)
         return locals()
-    
+
+    are_you_sure = request.POST.get("are_you_sure")
+    if not are_you_sure:
+        return redirect(".")
+    try:
+        are_you_sure = int(are_you_sure)
+    except ValueError:
+        return redirect(".")        
+    affected_actions = list(affected_actions)
+    if are_you_sure != len(affected_actions):
+        return redirect(".")
+
+    for action in affected_actions:
+        rest.delete_action(action.id)
+
+    return redirect("detail", user_id)
+        
 
 @authorize("edit_user")
 @allow_http("POST")
