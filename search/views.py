@@ -48,14 +48,25 @@ def make_default_user_query(users, query_data, values, search_on, extra_data={})
     if extra_info:
         query.update(extra_info)
 
-    human_query = "%s is in %s" % (search_on, values)
-    return users.filter(**query), human_query
+
+    if extra_data.get('istoggle', True):
+        users = users.filter(**query)
+        human_query = "%s is in %s" % (search_on, values)
+    else:
+        users = users.exclude(**query)
+        human_query = "%s is not in %s" % (search_on, values)
+    return users, human_query
 
 def make_date_query(users, query_data, values, search_on, extra_data={}):
     date = values[0]
     match = dateutil.parser.parse(date)
-    human_query = "%s is in %s" % (search_on, values)
-    return users.filter(**{query_data['query']: match}), human_query
+    if extra_data.get('istoggle', True):
+        users = users.filter(**{query_data['query']: match})
+        human_query = "%s is in %s" % (search_on, values)
+    else:
+        users = users.exclude(**{query_data['query']: match})
+        human_query = "%s is not in %s" % (search_on, values)
+    return users, human_query
 
 def make_zip_radius_query(users, query_data, values, search_on, extra_data={}):
     zipcode = values[0]
@@ -70,12 +81,22 @@ def make_zip_radius_query(users, query_data, values, search_on, extra_data={}):
         bbox = latlon_bbox(lat, lon, distance)
         assert bbox is not None, "Bad bounding box for latlon: %s,%s" % (lat, lon)
         lat1, lat2, lon1, lon2 = bbox
-        return (users.filter(location__latitude__range=(lat1, lat2),
-                             location__longitude__range=(lon1, lon2)),
-                "within %s miles of %s" % (distance, zipcode)
-                )
+        if extra_data.get('istoggle', True):
+            users = users.filter(location__latitude__range=(lat1, lat2),
+                                 location__longitude__range=(lon1, lon2))
+            human_query = "within %s miles of %s" % (distance, zipcode)
+        else:
+            users = users.exclude(location__latitude__range=(lat1, lat2),
+                                  location__longitude__range=(lon1, lon2))
+            human_query = "not within %s miles of %s" % (distance, zipcode)
     else:
-        return users.filter(zip=zipcode), "in zip code %s" % zipcode
+        if extra_data.get('istoggle', True):
+            users = users.filter(zip=zipcode)
+            human_query = "in zip code %s" % zipcode
+        else:
+            users = users.exclude(zip=zipcode)
+            human_query = "not in zip code %s" % zipcode
+    return users, human_query
 
 def make_contact_history_query(users, query_data, values, search_on, extra_data={}):
     contacted_since = values[0]
@@ -90,60 +111,84 @@ def make_contact_history_query(users, query_data, values, search_on, extra_data=
     if len(akids) == 0:
         ## TODO give a helpful error message, not a mysterious always-null query
         akids = [0]
-    return users.filter(id__in=akids), " ".join(human_query)
+    if extra_data.get('istoggle', True):
+        users = users.filter(id__in=akids)
+        human_query = " ".join(human_query)
+    else:
+        users = users.exclude(id__in=akids)
+        human_query = 'not %s' % (" ".join(human_query))
+    return users, human_query
 
 def make_emails_opened_query(users, query_data, values, search_on, extra_data={}):
     num_opens = values[0]
     num_opens = int(num_opens)
-    human = "opened at least %s emails" % num_opens
+    human_query = "opened at least %s emails" % num_opens
     if 'since' in extra_data:
         since = dateutil.parser.parse(extra_data['since'])
         users = users.filter(email_opens__created_at__gte=since)
-        human += " since %s" % since
+        human_query += " since %s" % since
     users = users.annotate(num_opens=Count('email_opens', distinct=True))
-    return users.filter(num_opens__gte=num_opens), human
+    if extra_data.get('istoggle', True):
+        users = users.filter(num_opens__gte=num_opens)
+    else:
+        users = users.exclude(num_opens__gte=num_opens)
+        human_query = 'not %s' % human_query
+    return users, human_query
 
 
 def make_more_actions_since_query(users, query_data, values, search_on, extra_data={}):
     num_actions = values[0]
     num_actions = int(num_actions)
-    human = 'more than %s actions' % num_actions
+    human_query = 'more than %s actions' % num_actions
     if 'since' in extra_data:
         since = dateutil.parser.parse(extra_data['since'])
         users = users.filter(actions__created_at__gte=since)
-        human += ' since %s' % extra_data['since']
+        human_query += ' since %s' % extra_data['since']
     users = users.annotate(num_actions=Count('actions', distinct=True))
-    return (users.filter(num_actions__gt=num_actions), human)
+    if extra_data.get('istoggle', True):
+        users = users.filter(num_actions__gt=num_actions)
+    else:
+        users = users.exclude(num_actions__gt=num_actions)
+        human_query = 'not %s' % human_query
+    return users, human_query
 
 
 def make_donated_more_than_query(users, query_data, values, search_on, extra_data={}):
-    human = 'has donated more than %s' % values[0]
+    if extra_data.get('istoggle', True):
+        human_query = 'has donated more than %s' % values[0]
+    else:
+        human_query = 'has not donated more than %s' % values[0]
     total_donated = float(values[0])
     if 'since' in extra_data:
         since = dateutil.parser.parse(extra_data['since'])
         users = users.filter(orders__created_at__gte=since)
-        human += ' since %s' % extra_data['since']
+        human_query += ' since %s' % extra_data['since']
     users = users.filter(orders__status='completed')
     users = users.annotate(total_orders=Sum('orders__total'))
-    return (users.filter(total_orders__gte=total_donated), human)
+    if extra_data.get('istoggle', True):
+        users = users.filter(total_orders__gte=total_donated)
+    else:
+        users = users.exclude(total_orders__gte=total_donated)
+    return users, human_query
 
 
 def make_donated_times_query(users, query_data, values, search_on, extra_data={}):
-    human = 'has donated more than %s times' % values[0]
+    if extra_data.get('istoggle', True):
+        human_query = 'has donated more than %s times' % values[0]
+    else:
+        human_query = 'has not donated more than %s times' % values[0]
     times_donated = int(values[0])
     if 'since' in extra_data:
         since = dateutil.parser.parse(extra_data['since'])
         users = users.filter(orders__created_at__gte=since)
-        human += ' since %s' % extra_data['since']
+        human_query += ' since %s' % extra_data['since']
     users = users.filter(orders__status='completed')
     users = users.annotate(n_orders=Count('orders', distinct=True))
-    return (users.filter(n_orders__gte=times_donated), human)
-
-
-def make_not_action_query(users, query_data, values, search_on, extra_data={}):
-    human = 'action is not in %s' % values
-    query_dict = {query_data['query'] + '__in': values}
-    return (users.exclude(**query_dict), human)
+    if extra_data.get('istoggle', True):
+        users = users.filter(n_orders__gte=times_donated)
+    else:
+        users = users.exclude(n_orders__gte=times_donated)
+    return users, human_query
 
 
 QUERIES = {
@@ -161,10 +206,6 @@ QUERIES = {
         },
     'action': {
         'query': "actions__page__id",
-        },
-    'not_action': {
-        'query': "actions__page__id",
-        'query_fn': make_not_action_query,
         },
     'source': {
         'query': "source",
@@ -309,7 +350,6 @@ def home(request):
              ),
         'Activity':
             (('action', 'Took part in action'),
-             ('not_action', 'Did not take part in action'),
              ('source', 'Source'),
              ('tag', 'Is tagged with'),
              ('contacted_since', "Contacted Since"),
@@ -406,7 +446,9 @@ def _search(request):
 
     include_pattern = re.compile("^include:\d+$")
     for key in request.GET.keys():
-        if include_pattern.match(key) and request.GET[key]:
+        if (include_pattern.match(key)
+            and request.GET[key]
+            and (not request.GET[key].endswith('_istoggle'))):
             includes.append((key, request.GET.getlist(key)))
 
     human_query = []
@@ -432,6 +474,14 @@ def _search(request):
                 continue
             query_data = QUERIES[item]
             extra_data = {}
+
+            istogglename = '%s_%s_istoggle' % (include_group[0], item)
+            istoggle = request.GET.get(istogglename, '1')
+            try:
+                istoggle = bool(int(istoggle))
+            except ValueError:
+                istoggle = True
+            extra_data['istoggle'] = istoggle
 
             ## XXX special cased zip code and distance
             # these two fields are together, if we have another case like this

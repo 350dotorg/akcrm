@@ -43,9 +43,14 @@ console.log(anchor);
         var newEl = $("#template_" + val).clone();
         newEl.removeAttr("id").addClass("searchParam");
         var newElWrapper = $("<div>").addClass("searchParamContainer");
+        var isToggleElt = $("#template_istoggle").clone();
+        isToggleElt.removeAttr("id");
+        isToggleElt.show();
+        isToggleElt.appendTo(newElWrapper);
         newEl.appendTo(newElWrapper);
         newEl.attr("name", $(this).attr("name") + "_" + newEl.attr("name"));
         newEl.show();
+        isToggleElt.attr("name", newEl.attr("name") + "_" + isToggleElt.attr("name"));
         newElWrapper.appendTo(that);
         if( newEl[0].tagName == "SELECT" ) {
           if( newEl.data("filtertype") == "state" ) {
@@ -218,16 +223,6 @@ console.log(anchor);
     {% endfor %}
   </select>
 
-  <select id="template_not_action"
-    name="not_action" multiple="multiple">
-    <option value=""></option>
-    {% for item in pages %}
-    <option value="{{ item.id }}">
-      {{ item }}
-    </option>
-    {% endfor %}
-  </select>
-
   <input
      id="template_source"
      type="text"
@@ -379,6 +374,17 @@ console.log(anchor);
      style="margin-left: 10px"
      placeholder="Distance in miles"
      />
+
+  <select
+     id="template_istoggle"
+     type="select"
+     name="istoggle"
+     style="float: left; width: 75px; margin-right: 5px"
+     >
+     <option value="1">Is</option>
+     <option value="0">Is Not</option>
+   </select>
+
 
       </div>
     </div>
