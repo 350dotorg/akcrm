@@ -23,6 +23,7 @@ from operator import itemgetter
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
+from akcrm.crm.models import HomePageHtml
 from akcrm.permissions import authorize
 from akcrm.search.models import AgentTag
 from akcrm.search.utils import clamp
@@ -340,6 +341,13 @@ def home(request):
     skills = CoreUserField.objects.using("ak").filter(name="skills").values_list("value", flat=True).distinct().order_by("value")
 
     languages = CoreLanguage.objects.using("ak").all().distinct().order_by("name")
+
+    homepagehtml = None
+    for htmlobj in HomePageHtml.objects.all():
+        html = htmlobj.html.strip()
+        if html:
+            homepagehtml = htmlobj.html
+        break
 
     fields = {
         'Location':
