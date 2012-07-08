@@ -56,3 +56,10 @@ class ContactRecord(models.Model):
             completed_at=self.completed_at,
             notes=self.notes,
             )
+
+
+class HomePageHtml(models.Model):
+    html = models.TextField()
+
+    def __unicode__(self):
+        return self.html
