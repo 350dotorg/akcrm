@@ -12,3 +12,9 @@ class AllowedTag(models.Model):
     ak_tag_id = models.IntegerField(unique=True)
     ak_page_id = models.IntegerField(unique=True)
     tag_name = models.CharField(max_length=300, unique=True)
+
+class HomePageHtml(models.Model):
+    html = models.TextField()
+
+    def __unicode__(self):
+        return self.html

@@ -23,7 +23,7 @@ from operator import itemgetter
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
 from akcrm.crm.models import ContactRecord
-from akcrm.crm.models import HomePageHtml
+from akcrm.cms.models import HomePageHtml
 from akcrm.permissions import authorize
 from akcrm.search.models import AgentTag
 from akcrm.search.utils import clamp

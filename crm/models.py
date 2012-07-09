@@ -58,8 +58,3 @@ class ContactRecord(models.Model):
             )
 
 
-class HomePageHtml(models.Model):
-    html = models.TextField()
-
-    def __unicode__(self):
-        return self.html
