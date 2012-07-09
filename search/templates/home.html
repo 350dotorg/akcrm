@@ -157,6 +157,13 @@ console.log(anchor);
 {% endblock %}
 
 {% block content %}
+
+{% if homepagehtml %}
+<div>
+  {{ homepagehtml|safe }}
+</div>
+{% endif %}
+
 <h1>Actionkit User Search</h1>
 
 <div class="span12">
