@@ -41,7 +41,8 @@
     {% endfor %}
   </ul>
 
-  Meanwhile, the following tags will continue to be associated with the user:
+  {% if affected_actions_tags %}
+  Meanwhile, the following tags (from the affected pages) will continue to be associated with the user:
 
   <ul>
     {% for tag in affected_actions_tags %}
@@ -50,12 +51,13 @@
     {% endif %}
     {% endfor %}
   </ul>
+  {% endif %}
 
   If you really want to do this, type the total number of actions that will be deleted into the box below and click the big red button.
   <form method="POST">
     {% csrf_token %}
     <input type="text" name="are_you_sure" />
-    <input type="submit" value="Remove user tag" class="btn danger" />
+    <input type="submit" value="Remove user tag" class="btn btn-danger" />
   </form>
 
 </div>
