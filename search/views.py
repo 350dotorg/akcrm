@@ -824,6 +824,12 @@ def edit_skills(request, user_id):
                         content_type="text/plain")
 
 
+def safe_encode(value):
+    if isinstance(value, unicode):
+        return value.encode('utf-8')
+    return str(value)
+
+
 def user_to_csv_row(user, fields):
     row = []
     for field in fields:
@@ -831,6 +837,7 @@ def user_to_csv_row(user, fields):
         # phone is only callable field so far
         if callable(value):
             value = value()
+        value = safe_encode(value)
         row.append(value)
     return row
 
