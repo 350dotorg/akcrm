@@ -2,7 +2,9 @@ from StringIO import StringIO
 from actionkit import Client
 from actionkit.models import *
 from actionkit import rest
+from akcrm.search.models import SearchQuery
 from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.db import connections
 from django.db.models import Count
 from django.db.models import Sum
@@ -22,6 +24,7 @@ from operator import itemgetter
 
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
+from akcrm.crm.forms import SearchSaveForm
 from akcrm.crm.models import ContactRecord
 from akcrm.cms.models import HomePageHtml
 from akcrm.permissions import authorize
@@ -866,3 +869,26 @@ def search_csv(request):
     response['Content-Type'] = 'text/csv'
     response['Content-Disposition'] = 'attachment; filename=search.csv'
     return response
+
+
+@authorize("search_save")
+@rendered_with("search_save.html")
+def search_save(request):
+    if request.method == 'POST':
+        form = SearchSaveForm(request.POST)
+        if form.is_valid():
+            searchquery = SearchQuery(
+                slug=form.cleaned_data['slug'],
+                title=form.cleaned_data['title'],
+                description=form.cleaned_data['description'],
+                querystring=form.cleaned_data['querystring'],
+                )
+            searchquery.save()
+            # add flash message
+            url = '%s?%s' % (reverse('search'), searchquery.querystring)
+            return HttpResponseRedirect(url)
+    else:
+        form = SearchSaveForm()
+
+    querystring = request.META['QUERY_STRING']
+    return dict(form=form, querystring=querystring)

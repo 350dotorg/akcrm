@@ -10,4 +10,10 @@ class ContactForm(forms.ModelForm):
 
     akid = forms.CharField(widget=forms.HiddenInput, required=True)
     notes = forms.CharField(widget=forms.Textarea(attrs={"sidebar": "sidebar", "style": "width: 100%"}), required=False)
-    
+
+
+class SearchSaveForm(forms.Form):
+    slug = forms.CharField(max_length=64)
+    title = forms.CharField(max_length=128)
+    description = forms.CharField(widget=forms.Textarea(), required=False)
+    querystring = forms.CharField()

@@ -164,7 +164,12 @@
 <div class="results-header">
   {% if request.PERMISSIONS.search_export %}
   <p style="float: right">
-    <a href="{%url search_csv %}?{{request.META.QUERY_STRING}}">Export CSV</a>
+    <a href="{% url search_csv %}?{{request.META.QUERY_STRING}}">Export CSV</a>
+  </p>
+  {% endif %}
+  {% if request.PERMISSIONS.search_save %}
+  <p style="float: right; margin-right: 10px">
+    <a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
   </p>
   {% endif %}
   Searched for people who match::
