@@ -889,7 +889,7 @@ def search_save(request):
                 )
             searchquery.save()
             # need to save first to get primary key for relationship
-            searchquery.user = request.user,
+            searchquery.user = request.user
             searchquery.save()
 
             # add flash message
