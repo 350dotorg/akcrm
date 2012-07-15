@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load helpful_tags verbatim %}
+<html>
+<body>
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  {% endblock %}
+  {% block content %}
+  <h2>Saved searches</h2>
+  <ul>
+    {% for query in queries %}
+    <li><a href="{% url search_follow query.slug %}">{{ query.title }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endblock %}
+</body>
+</html>

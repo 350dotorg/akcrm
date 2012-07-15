@@ -5,6 +5,7 @@ from actionkit import rest
 from akcrm.search.models import SearchQuery
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import connections
 from django.db.models import Count
@@ -12,6 +13,7 @@ from django.db.models import Sum
 from djangohelpers import rendered_with, allow_http
 from djangohelpers.templatetags.helpful_tags import qsify
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
@@ -898,3 +900,21 @@ def search_save(request):
 
     querystring = request.META['QUERY_STRING']
     return dict(form=form, querystring=querystring)
+
+
+@login_required
+@authorize("search_saved")
+@rendered_with("search_saved.html")
+def search_saved(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    # is there a smarter permissioning system?
+    if not (request.user.is_superuser or request.user == user):
+        return HttpResponseForbidden()
+    queries = SearchQuery.objects.filter(user=user)
+    return dict(queries=queries)
+
+
+def search_follow(request, slug):
+    query = get_object_or_404(SearchQuery, slug=slug)
+    url = '%s?%s' % (reverse('search'), query.querystring)
+    return HttpResponseRedirect(url)

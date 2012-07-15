@@ -6,3 +6,4 @@ The following magic groups influence users' permissions:
  * search_export
  * unrestricted_detag
  * search_save
+ * search_saved

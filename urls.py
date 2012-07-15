@@ -23,6 +23,8 @@ urlpatterns = patterns(
     url(r'^search/akids/$', 'search_just_akids', name='search_just_akids'),
     url(r'^search/csv/$', 'search_csv', name='search_csv'),
     url(r'^search/save/$', 'search_save', name='search_save'),
+    url(r'^search/saved/(?P<user_id>\d+)/$', 'search_saved', name='search_saved'),
+    url(r'^search/follow/(?P<slug>[\w_-]+)/$', 'search_follow', name='search_follow'),
 
     url(r'^record/(?P<user_id>\d+)/$', 'detail', name='detail'),
     url(r'^record/(?P<user_id>\d+)/json/$', 'detail_json', name='detail_json'),
