@@ -13,7 +13,7 @@ class ContactForm(forms.ModelForm):
 
 
 class SearchSaveForm(forms.Form):
-    slug = forms.CharField(max_length=64)
+    slug = forms.SlugField(max_length=64)
     title = forms.CharField(max_length=128)
     description = forms.CharField(widget=forms.Textarea(), required=False)
     querystring = forms.CharField()
