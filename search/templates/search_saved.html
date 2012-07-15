@@ -17,6 +17,9 @@
     <a style="margin-left: 15px"
        href="{% url search_remove query.id %}">Remove</a>
     </li>
+    {% empty %}
+    <li>No saved queries. Try a <a href="{% url search %}">search</a>
+        and save one.</li>
     {% endfor %}
   </ul>
   {% endblock %}
