@@ -1,5 +1,7 @@
+from akcrm.actionkit.models import CoreUser
 from collections import namedtuple
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class SearchField(models.Model):
@@ -22,10 +24,11 @@ class AgentTag(_AgentTag):
 class SearchQuery(models.Model):
     """User saved / favorite query"""
 
-    slug = models.CharField(max_length=64)
+    slug = models.CharField(max_length=64, unique=True)
     title = models.CharField(max_length=128)
     description = models.TextField()
     querystring = models.TextField()
+    user = models.ManyToManyField(User)
 
     def __unicode__(self):
         return self.title

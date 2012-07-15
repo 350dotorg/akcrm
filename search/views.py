@@ -4,6 +4,7 @@ from actionkit.models import *
 from actionkit import rest
 from akcrm.search.models import SearchQuery
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.db import connections
 from django.db.models import Count
@@ -872,6 +873,7 @@ def search_csv(request):
 
 
 @authorize("search_save")
+@login_required
 @rendered_with("search_save.html")
 def search_save(request):
     if request.method == 'POST':
@@ -884,6 +886,10 @@ def search_save(request):
                 querystring=form.cleaned_data['querystring'],
                 )
             searchquery.save()
+            # need to save first to get primary key for relationship
+            searchquery.user = request.user,
+            searchquery.save()
+
             # add flash message
             url = '%s?%s' % (reverse('search'), searchquery.querystring)
             return HttpResponseRedirect(url)
