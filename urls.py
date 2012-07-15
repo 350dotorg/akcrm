@@ -25,6 +25,7 @@ urlpatterns = patterns(
     url(r'^search/save/$', 'search_save', name='search_save'),
     url(r'^search/saved/(?P<user_id>\d+)/$', 'search_saved', name='search_saved'),
     url(r'^search/follow/(?P<slug>[\w_-]+)/$', 'search_follow', name='search_follow'),
+    url(r'^search/remove/(?P<queryid>\d+)/$', 'search_remove', name='search_remove'),
 
     url(r'^record/(?P<user_id>\d+)/$', 'detail', name='detail'),
     url(r'^record/(?P<user_id>\d+)/json/$', 'detail_json', name='detail_json'),

@@ -7,3 +7,4 @@ The following magic groups influence users' permissions:
  * unrestricted_detag
  * search_save
  * search_saved
+ * search_remove

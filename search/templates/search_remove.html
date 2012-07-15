@@ -9,16 +9,13 @@
   {% endif %}
   {% endblock %}
   {% block content %}
-  <h2>Saved searches</h2>
-  <ul>
-    {% for query in queries %}
-    <li>
-    <a href="{% url search_follow query.slug %}">{{ query.title }}</a>
-    <a style="margin-left: 15px"
-       href="{% url search_remove query.id %}">Remove</a>
-    </li>
-    {% endfor %}
-  </ul>
+  <h2>Really delete?</h2>
+  <p>Are you sure you want to remove your saved query:</p>
+  <p><strong>{{ query.title }}</strong></p>
+  <p>{{ query.description }}</p>
+  <form method="POST" action="{% url search_remove query.id %}">{% csrf_token %}
+    <input type="submit" value="Delete" />
+  </form> 
   {% endblock %}
 </body>
 </html>

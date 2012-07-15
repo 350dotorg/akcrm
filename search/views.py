@@ -918,3 +918,14 @@ def search_follow(request, slug):
     query = get_object_or_404(SearchQuery, slug=slug)
     url = '%s?%s' % (reverse('search'), query.querystring)
     return HttpResponseRedirect(url)
+
+
+@login_required
+@authorize("search_remove")
+@rendered_with("search_remove.html")
+def search_remove(request, queryid):
+    query = get_object_or_404(SearchQuery, id=queryid)
+    if request.method == 'POST':
+        query.delete()
+        return HttpResponseRedirect(reverse('home'))
+    return dict(query=query)
