@@ -24,7 +24,7 @@ class AgentTag(_AgentTag):
 class SearchQuery(models.Model):
     """User saved / favorite query"""
 
-    slug = models.CharField(max_length=64, unique=True)
+    slug = models.SlugField(max_length=64, unique=True)
     title = models.CharField(max_length=128)
     description = models.TextField()
     querystring = models.TextField()
