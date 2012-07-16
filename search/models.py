@@ -32,3 +32,10 @@ class SearchQuery(models.Model):
 
     def __unicode__(self):
         return self.title
+
+
+class UserSearchQuery(models.Model):
+    """Join Users and Search Queries"""
+
+    user = models.ForeignKey(User)
+    query = models.ForeignKey(SearchQuery)

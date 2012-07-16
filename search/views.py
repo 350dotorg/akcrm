@@ -3,6 +3,7 @@ from actionkit import Client
 from actionkit.models import *
 from actionkit import rest
 from akcrm.search.models import SearchQuery
+from akcrm.search.models import UserSearchQuery
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -23,6 +24,7 @@ import dateutil.parser
 import json
 import os.path
 import re
+from operator import attrgetter
 from operator import itemgetter
 
 from akcrm.cms.models import AllowedTag
@@ -889,8 +891,9 @@ def search_save(request):
                 )
             searchquery.save()
             # need to save first to get primary key for relationship
-            searchquery.user = request.user
-            searchquery.save()
+            usersearchquery = UserSearchQuery(user=request.user,
+                                              query=searchquery)
+            usersearchquery.save()
 
             # add flash message
             url = '%s?%s' % (reverse('search'), searchquery.querystring)
@@ -910,7 +913,8 @@ def search_saved(request, user_id):
     # is there a smarter permissioning system?
     if not (request.user.is_superuser or request.user == user):
         return HttpResponseForbidden()
-    queries = SearchQuery.objects.filter(user=user)
+    userqueries = UserSearchQuery.objects.filter(user=user).select_related('query')
+    queries = map(attrgetter('query'), userqueries)
     return dict(queries=queries)
 
 
