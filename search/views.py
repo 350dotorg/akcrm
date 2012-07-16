@@ -910,7 +910,7 @@ def search_save(request):
 @rendered_with("search_saved.html")
 def search_saved(request, user_id):
     user = get_object_or_404(User, id=user_id)
-    # is there a smarter permissioning system?
+    # is there a better way to do this?
     if not (request.user.is_superuser or request.user == user):
         return HttpResponseForbidden()
     userqueries = UserSearchQuery.objects.filter(user=user).select_related('query')
@@ -929,6 +929,7 @@ def search_follow(request, slug):
 @rendered_with("search_remove.html")
 def search_remove(request, queryid):
     query = get_object_or_404(SearchQuery, id=queryid)
+    # insecure? user is admin or owner check?
     if request.method == 'POST':
         query.delete()
         return HttpResponseRedirect(reverse('home'))
