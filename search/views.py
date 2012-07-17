@@ -726,9 +726,9 @@ def remove_user_tag(request, user_id, tag_id):
 @rendered_with("remove_user_tags.html")
 def remove_user_tag_unsafe(request, user_id, tag_id):
     tag = get_object_or_404(CoreTag.objects.using("ak"), id=tag_id)
-    user = get_object_or_404(CoreUser.objects.using("ak"), id=user_id)
+    agent = get_object_or_404(CoreUser.objects.using("ak"), id=user_id)
     affected_actions = CoreAction.objects.using("ak").filter(
-        page__pagetags__tag__id=tag_id, user__id=user_id).select_related("page")
+        page__pagetags__tag__id=tag_id, user__id=agent.id).select_related("page")
     if request.method == "GET":
 
         ## check whether any OTHER tags will be removed from the user as a consequence
@@ -738,7 +738,7 @@ def remove_user_tag_unsafe(request, user_id, tag_id):
         orphaned_tags = set()
         for tag in affected_actions_tags:
             other_actions = CoreAction.objects.using("ak").filter(
-                page__pagetags__tag__id=tag.id, user__id=user_id).exclude(
+                page__pagetags__tag__id=tag.id, user__id=agent.id).exclude(
                 page__id__in=affected_actions_page_ids).exists()
             if not other_actions:
                 orphaned_tags.add(tag)
