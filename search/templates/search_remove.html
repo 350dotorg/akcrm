@@ -5,7 +5,7 @@
   {% block nav %}
   <li><a href="{% url home %}">New Search</a></li>
   {% if request.PERMISSIONS.search_saved %}
-  <li><a href="{% url search_saved request.user.id %}">Saved Searches</a></li>
+  <li><a href="{% url search_saved request.user.username %}">Saved Searches</a></li>
   {% endif %}
   {% endblock %}
   {% block content %}

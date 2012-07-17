@@ -900,8 +900,8 @@ def search_save(request):
 @login_required
 @authorize("search_saved")
 @rendered_with("search_saved.html")
-def search_saved(request, user_id):
-    user = get_object_or_404(User, id=user_id)
+def search_saved(request, username):
+    user = get_object_or_404(User, username=username)
     # is there a better way to do this?
     if not (request.user.is_superuser or request.user == user):
         return HttpResponseForbidden()

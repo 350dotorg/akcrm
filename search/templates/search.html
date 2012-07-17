@@ -156,7 +156,7 @@
   <li><a href="{% url allowed_tags %}">Manage Tags</a></li>
   {% endif %}
   {% if request.PERMISSIONS.search_saved %}
-  <li><a href="{% url search_saved request.user.id %}">Saved Searches</a></li>
+  <li><a href="{% url search_saved request.user.username %}">Saved Searches</a></li>
   {% endif %}
   <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">Get Raw SQL for Mailings</a></li>
   <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">Get AKIDs for Includes/Excludes</a></li>

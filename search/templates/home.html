@@ -155,7 +155,7 @@ console.log(anchor);
 <li><a href="{% url allowed_tags %}">Manage Tags</a></li>
 {% endif %}
 {% if request.PERMISSIONS.search_saved %}
-<li><a href="{% url search_saved request.user.id %}">Saved Searches</a></li>
+<li><a href="{% url search_saved request.user.username %}">Saved Searches</a></li>
 {% endif %}
 {% endblock %}
 
