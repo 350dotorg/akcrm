@@ -29,7 +29,7 @@ from operator import itemgetter
 
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
-from akcrm.crm.forms import SearchSaveForm
+from akcrm.crm.forms import SearchQueryForm
 from akcrm.crm.models import ContactRecord
 from akcrm.cms.models import HomePageHtml
 from akcrm.permissions import authorize
@@ -881,16 +881,9 @@ def search_csv(request):
 @rendered_with("search_save.html")
 def search_save(request):
     if request.method == 'POST':
-        form = SearchSaveForm(request.POST)
+        form = SearchQueryForm(request.POST)
         if form.is_valid():
-            searchquery = SearchQuery(
-                slug=form.cleaned_data['slug'],
-                title=form.cleaned_data['title'],
-                description=form.cleaned_data['description'],
-                querystring=form.cleaned_data['querystring'],
-                )
-            searchquery.save()
-            # need to save first to get primary key for relationship
+            searchquery = form.save()
             usersearchquery = UserSearchQuery(user=request.user,
                                               query=searchquery)
             usersearchquery.save()
@@ -898,13 +891,10 @@ def search_save(request):
             # add flash message
             url = '%s?%s' % (reverse('search'), searchquery.querystring)
             return HttpResponseRedirect(url)
-        else:
-            querystring = request.POST.get('querystring')
     else:
-        form = SearchSaveForm()
-        querystring = request.META['QUERY_STRING']
+        form = SearchQueryForm(initial={'querystring': request.META['QUERY_STRING']})
 
-    return dict(form=form, querystring=querystring)
+    return dict(form=form)
 
 
 @login_required

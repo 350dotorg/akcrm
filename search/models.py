@@ -28,7 +28,6 @@ class SearchQuery(models.Model):
     title = models.CharField(max_length=128)
     description = models.TextField()
     querystring = models.TextField()
-    user = models.ManyToManyField(User)
 
     def __unicode__(self):
         return self.title
