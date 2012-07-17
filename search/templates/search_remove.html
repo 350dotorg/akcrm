@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load helpful_tags verbatim %}
+<html>
+<body>
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  {% if request.PERMISSIONS.search_saved %}
+  <li><a href="{% url search_saved request.user.id %}">Saved Searches</a></li>
+  {% endif %}
+  {% endblock %}
+  {% block content %}
+  <h2>Really delete?</h2>
+  <p>Are you sure you want to remove your saved query:</p>
+  <p><strong>{{ query.title }}</strong></p>
+  <p>{{ query.description }}</p>
+  <form method="POST" action="{% url search_remove query.id %}">{% csrf_token %}
+    <input type="submit" value="Delete" />
+  </form> 
+  {% endblock %}
+</body>
+</html>

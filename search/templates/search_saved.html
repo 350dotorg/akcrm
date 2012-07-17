@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load helpful_tags verbatim %}
+<html>
+<body>
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  {% if request.PERMISSIONS.search_saved %}
+  <li><a href="{% url search_saved request.user.id %}">Saved Searches</a></li>
+  {% endif %}
+  {% endblock %}
+  {% block content %}
+  <h2>Saved searches</h2>
+  <ul>
+    {% for query in queries %}
+    <li>
+    <a href="{% url search_follow query.slug %}">{{ query.title }}</a>
+    <a style="margin-left: 15px"
+       href="{% url search_remove query.id %}">Remove</a>
+    </li>
+    {% empty %}
+    <li>No saved queries. Try a <a href="{% url home %}">search</a>
+        and save one.</li>
+    {% endfor %}
+  </ul>
+  {% endblock %}
+</body>
+</html>

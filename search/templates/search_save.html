@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load helpful_tags verbatim %}
+<html>
+<body>
+  {% block nav %}
+  <li><a href="{% url home %}">New Search</a></li>
+  {% endblock %}
+  {% block content %}
+  <h2>Save search</h2>
+  <form method="POST" action="{% url search_save %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Save Query" />
+  </form>
+  {% endblock %}
+</body>
+</html>

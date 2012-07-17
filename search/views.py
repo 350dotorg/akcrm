@@ -2,13 +2,19 @@ from StringIO import StringIO
 from actionkit import Client
 from actionkit.models import *
 from actionkit import rest
+from akcrm.search.models import SearchQuery
+from akcrm.search.models import UserSearchQuery
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.db import connections
 from django.db.models import Count
 from django.db.models import Sum
 from djangohelpers import rendered_with, allow_http
 from djangohelpers.templatetags.helpful_tags import qsify
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
@@ -18,10 +24,12 @@ import dateutil.parser
 import json
 import os.path
 import re
+from operator import attrgetter
 from operator import itemgetter
 
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
+from akcrm.crm.forms import SearchQueryForm
 from akcrm.crm.models import ContactRecord
 from akcrm.cms.models import HomePageHtml
 from akcrm.permissions import authorize
@@ -866,3 +874,55 @@ def search_csv(request):
     response['Content-Type'] = 'text/csv'
     response['Content-Disposition'] = 'attachment; filename=search.csv'
     return response
+
+
+@authorize("search_save")
+@login_required
+@rendered_with("search_save.html")
+def search_save(request):
+    if request.method == 'POST':
+        form = SearchQueryForm(request.POST)
+        if form.is_valid():
+            searchquery = form.save()
+            usersearchquery = UserSearchQuery(user=request.user,
+                                              query=searchquery)
+            usersearchquery.save()
+
+            # add flash message
+            url = '%s?%s' % (reverse('search'), searchquery.querystring)
+            return HttpResponseRedirect(url)
+    else:
+        form = SearchQueryForm(initial={'querystring': request.META['QUERY_STRING']})
+
+    return dict(form=form)
+
+
+@login_required
+@authorize("search_saved")
+@rendered_with("search_saved.html")
+def search_saved(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    # is there a better way to do this?
+    if not (request.user.is_superuser or request.user == user):
+        return HttpResponseForbidden()
+    userqueries = UserSearchQuery.objects.filter(user=user).select_related('query')
+    queries = map(attrgetter('query'), userqueries)
+    return dict(queries=queries)
+
+
+def search_follow(request, slug):
+    query = get_object_or_404(SearchQuery, slug=slug)
+    url = '%s?%s' % (reverse('search'), query.querystring)
+    return HttpResponseRedirect(url)
+
+
+@login_required
+@authorize("search_remove")
+@rendered_with("search_remove.html")
+def search_remove(request, queryid):
+    query = get_object_or_404(SearchQuery, id=queryid)
+    # insecure? user is admin or owner check?
+    if request.method == 'POST':
+        query.delete()
+        return HttpResponseRedirect(reverse('home'))
+    return dict(query=query)
