@@ -158,22 +158,31 @@
   {% if request.PERMISSIONS.search_saved %}
   <li><a href="{% url search_saved request.user.username %}">Saved Searches</a></li>
   {% endif %}
-  <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">Get Raw SQL for Mailings</a></li>
-  <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">Get AKIDs for Includes/Excludes</a></li>
   {% endblock %}
 
   {% block content %}
+  <header class="jumbotron subhead">
+  <div class="subnav">
+    <ul class="nav nav-pills">
+      <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">
+	  Raw SQL</a></li>
+      <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">
+	  AKIDs</a></li>
+      {% if request.PERMISSIONS.search_export %}
+      <li>
+	<a href="{% url search_csv %}?{{request.META.QUERY_STRING}}">Export CSV</a>
+      </li>
+      {% endif %}
+      {% if request.PERMISSIONS.search_save %}
+      <li>
+	<a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
+      </li>
+    </ul>
+  </div>
+  </header>
+
 <h1>Found: <span id="num_results">{{ users|length }}</span> people</h1>
 <div class="results-header">
-  {% if request.PERMISSIONS.search_export %}
-  <p style="float: right">
-    <a href="{% url search_csv %}?{{request.META.QUERY_STRING}}">Export CSV</a>
-  </p>
-  {% endif %}
-  {% if request.PERMISSIONS.search_save %}
-  <p style="float: right; margin-right: 10px">
-    <a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
-  </p>
   {% endif %}
   Searched for people who match::
   <pre>{{ human_query }}</pre>
