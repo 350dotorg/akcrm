@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load aktivator_tags %}
+{% load aktivator_tags helpful_tags %}
 
 <html>
 <head>
@@ -83,17 +83,42 @@
   </style>
   {% endblock %}
 </head>
+
 <body>
 {% block nav %}
 <li><a href="{% url home %}">New Search</a></li>
 {% if request.PERMISSIONS.add_allowed_tags %}
 <li><a href="{% url allowed_tags %}">Manage Tags</a></li>
 {% endif %}
-{% if query %}
-<li><a href="{% url search %}?{{query}}">Back to Results</a></li>
+{% if request.PERMISSIONS.search_saved %}
+<li><a href="{% url search_saved request.user.username %}">Saved Searches</a></li>
 {% endif %}
 {% endblock %}
+
 {% block content %}
+{% if query %}
+  <div class="subnav">
+    <ul class="nav nav-pills">
+      <li><a href="{% url search %}?{{query}}">Back to Results</a></li>
+      <li><a target="_blank" href="{% url search_raw_sql %}{{query}}">
+	  Raw SQL</a></li>
+      <li><a target="_blank" href="{% url search_just_akids %}{{query}}">
+	  AKIDs</a></li>
+      {% if request.PERMISSIONS.search_export %}
+      <li>
+	<a href="{% url search_csv %}?{{query}}">Export CSV</a>
+      </li>
+      {% endif %}
+      {% if request.PERMISSIONS.search_save %}
+      <li>
+	<a href="{% url search_save %}?{{query}}">Save Search</a>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+  <br />
+{% endif %}
+
 <div class="row">
   <div class="span12 header-compact" style="margin-bottom: 2em">
     <h2>{{ agent }}</h2>

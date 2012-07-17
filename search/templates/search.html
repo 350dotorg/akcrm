@@ -176,13 +176,13 @@
       <li>
 	<a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
       </li>
+      {% endif %}
     </ul>
   </div>
 
   <br />
 <h1>Found: <span id="num_results">{{ users|length }}</span> people</h1>
 <div class="results-header">
-  {% endif %}
   Searched for people who match::
   <pre>{{ human_query }}</pre>
 </div>
