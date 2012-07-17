@@ -99,21 +99,48 @@
 {% if query %}
   <div class="subnav">
     <ul class="nav nav-pills">
-      <li><a href="{% url search %}?{{query}}">Back to Results</a></li>
-      <li><a target="_blank" href="{% url search_raw_sql %}{{query}}">
-	  Raw SQL</a></li>
-      <li><a target="_blank" href="{% url search_just_akids %}{{query}}">
-	  AKIDs</a></li>
-      {% if request.PERMISSIONS.search_export %}
-      <li>
-	<a href="{% url search_csv %}?{{query}}">Export CSV</a>
+      <li class="dropdown">
+	<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+	  Search
+	  <b class="caret"></b>
+	</a>
+	<ul class="dropdown-menu">
+	  <li><a href="{% url search %}?{{query}}">Back to Results</a></li>
+	  <li><a target="_blank" href="{% url search_raw_sql %}{{query}}">
+	      Raw SQL</a></li>
+	  <li><a target="_blank" href="{% url search_just_akids %}{{query}}">
+	      AKIDs</a></li>
+	  {% if request.PERMISSIONS.search_export %}
+	  <li>
+	    <a href="{% url search_csv %}?{{query}}">Export CSV</a>
+	  </li>
+	  {% endif %}
+	  {% if request.PERMISSIONS.search_save %}
+	  <li>
+	    <a href="{% url search_save %}?{{query}}">Save Search</a>
+	  </li>
+	  {% endif %}
+	</ul>
       </li>
-      {% endif %}
-      {% if request.PERMISSIONS.search_save %}
-      <li>
-	<a href="{% url search_save %}?{{query}}">Save Search</a>
+      <li class="dropdown">
+	<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+	  User
+	  <b class="caret"></b>
+	</a>
+	<ul class="dropdown-menu">
+	  <li>
+	    <a target="_blank" 
+	       href="{{ ACTIONKIT_URL }}/admin/core/user/{{ agent.id }}/">
+	      View/Edit in Actionkit</a>
+	  </li>
+	  {% if request.PERMISSIONS.add_contact_record %}
+	  <li>
+	    <a href="#contact_form">Add New Contact Record</a>
+	  </li>
+	  {% endif %}
+
+	</ul>
       </li>
-      {% endif %}
     </ul>
   </div>
   <br />

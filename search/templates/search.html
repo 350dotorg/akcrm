@@ -163,20 +163,28 @@
   {% block content %}
   <div class="subnav">
     <ul class="nav nav-pills">
-      <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">
-	  Raw SQL</a></li>
-      <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">
-	  AKIDs</a></li>
-      {% if request.PERMISSIONS.search_export %}
-      <li>
-	<a href="{% url search_csv %}?{{request.META.QUERY_STRING}}">Export CSV</a>
+      <li class="dropdown">
+	<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+	  Search
+	  <b class="caret"></b>
+	</a>
+	<ul class="dropdown-menu">
+	  <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">
+	      Raw SQL</a></li>
+	  <li><a target="_blank" href="{% url search_just_akids %}{{request.GET|qsify}}">
+	      AKIDs</a></li>
+	  {% if request.PERMISSIONS.search_export %}
+	  <li>
+	    <a href="{% url search_csv %}?{{request.META.QUERY_STRING}}">Export CSV</a>
+	  </li>
+	  {% endif %}
+	  {% if request.PERMISSIONS.search_save %}
+	  <li>
+	    <a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
+	  </li>
+	  {% endif %}
+	</ul>
       </li>
-      {% endif %}
-      {% if request.PERMISSIONS.search_save %}
-      <li>
-	<a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
-      </li>
-      {% endif %}
     </ul>
   </div>
 
