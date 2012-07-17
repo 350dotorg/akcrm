@@ -1,0 +1,32 @@
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'akcrm.sqlite',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
+        },
+    'ak': {
+        'ENGINE': 'django.contrib.gis.db.backends.mysql',
+	...
+        'USE_LIVE_FOR_TESTS': True,
+        },
+}
+
+#ACTIONKIT_URL = 'https://act.roboticdogs.com'
+#ACTIONKIT_API_HOST = 'https://act.roboticdogs.com'
+#ACTIONKIT_API_USER = ...
+#ACTIONKIT_API_PASSWORD = ...
+
+LOCAL_INSTALLED_APPS = (
+    "debug_toolbar",
+    )
+
+LOCAL_MIDDLEWARE_CLASSES = (
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+)
+
+INTERNAL_IPS = ('127.0.0.1',)
+
+AKTIVATOR_TAG_PAGE_TAG_ID = 10
