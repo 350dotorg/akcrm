@@ -161,7 +161,6 @@
   {% endblock %}
 
   {% block content %}
-  <header class="jumbotron subhead">
   <div class="subnav">
     <ul class="nav nav-pills">
       <li><a target="_blank" href="{% url search_raw_sql %}{{request.GET|qsify}}">
@@ -179,8 +178,8 @@
       </li>
     </ul>
   </div>
-  </header>
 
+  <br />
 <h1>Found: <span id="num_results">{{ users|length }}</span> people</h1>
 <div class="results-header">
   {% endif %}
