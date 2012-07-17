@@ -898,10 +898,12 @@ def search_save(request):
             # add flash message
             url = '%s?%s' % (reverse('search'), searchquery.querystring)
             return HttpResponseRedirect(url)
+        else:
+            querystring = request.POST.get('querystring')
     else:
         form = SearchSaveForm()
+        querystring = request.META['QUERY_STRING']
 
-    querystring = request.META['QUERY_STRING']
     return dict(form=form, querystring=querystring)
 
 
