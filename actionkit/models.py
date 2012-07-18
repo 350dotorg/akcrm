@@ -56,20 +56,12 @@ class CoreUser(models.Model):
         return u", ".join(field for field in fields
                           if field and field.strip())
 
-    def phone(self):
-        try:
-            return self.phones.all()[0]
-        except IndexError:
-            return None
-
     def custom_fields(self):
+        return {}
         fields = {}
         for field in self.fields.all():
             fields.setdefault(field.name, []).append(field.value)
         return fields
-
-    def organization(self):
-        return ", ".join(self.custom_fields().get("organization", []))
 
     def to_json(self):
         agent = self

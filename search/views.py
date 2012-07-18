@@ -553,7 +553,6 @@ def _search(request):
             users = users | query
     if users is None:
         users = base_user_query
-    users = users.prefetch_related("fields", "phones")
 
     ctx = dict(includes=includes,
                params=request.GET)
@@ -578,6 +577,15 @@ def _search(request):
             where=extra_where,
             params=extra_params)
 
+    users = users.extra(select={'phone': (
+                "SELECT `phone` FROM `core_phone` "
+                "WHERE `core_phone`.`user_id`=`core_user`.`id` "
+                "LIMIT 1"),
+                                'organization': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="organization" LIMIT 1'),
+                                })
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
 
