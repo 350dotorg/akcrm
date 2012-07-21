@@ -3,6 +3,7 @@ from actionkit.models import *
 from django.conf import settings
 from django.db import connections
 from django.db.models import Count
+from django.contrib import messages
 from djangohelpers import rendered_with, allow_http
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -25,6 +26,7 @@ def contacts_for_user(request, akid):
     form = ContactForm(data=request.POST)
     if form.is_valid():
         contact = form.save()
+        messages.success(request, u'Contact saved')
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
     else:
         return locals()
