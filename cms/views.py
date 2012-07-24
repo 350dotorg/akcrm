@@ -3,6 +3,7 @@ from actionkit.models import *
 from django.conf import settings
 from django.db import connections
 from django.db.models import Count
+from django.contrib import messages
 from djangohelpers import rendered_with, allow_http
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
@@ -35,4 +36,5 @@ def allowed_tags(request):
         return locals()
 
     tag = form.save()
+    messages.success(request, u'Tags added')
     return redirect(".")
