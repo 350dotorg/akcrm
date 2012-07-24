@@ -250,6 +250,21 @@
   }
 }
 
+  .messages {
+    margin: 1em auto;
+    width: 940px;
+    background-color: inherit;
+    color: inherit;
+    border: none;
+    font-weight: bold;
+  }
+  ul.messages {
+    padding: 0;
+  }
+  ul.messages li {
+    list-style: none;
+    padding: 1em;
+  }
 
     </style>
 
@@ -289,6 +304,14 @@ $(document).scroll(function(){
         </div>
       </div>
     </div>
+
+    {% if messages %}
+    <ul class="messages alert">
+        {% for message in messages %}
+        <li {% if message.tags %} class="alert-{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
     <br />
     <div class="container">

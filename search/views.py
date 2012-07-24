@@ -7,6 +7,7 @@ from akcrm.search.models import UserSearchQuery
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.db import connections
 from django.db.models import Count
@@ -723,6 +724,7 @@ def add_user_tag(request, user_id, tag_id):
     action = rest.create_action(allowed_tag.ak_page_id, user_id)
     if request.is_ajax():
         return HttpResponse(action['action']['id'])
+    messages.success(request, u'Added tag: %s' % allowed_tag.tag_name)
     return redirect("detail", user_id)
 
 def remove_user_tag(request, user_id, tag_id):
@@ -896,7 +898,7 @@ def search_save(request):
                                               query=searchquery)
             usersearchquery.save()
 
-            # add flash message
+            messages.success(request, u'Search saved')
             url = '%s?%s' % (reverse('search'), searchquery.querystring)
             return HttpResponseRedirect(url)
     else:
@@ -932,5 +934,6 @@ def search_remove(request, queryid):
     # insecure? user is admin or owner check?
     if request.method == 'POST':
         query.delete()
+        messages.success(request, u'Saved search removed')
         return HttpResponseRedirect(reverse('home'))
     return dict(query=query)
