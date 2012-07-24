@@ -724,6 +724,7 @@ def add_user_tag(request, user_id, tag_id):
     action = rest.create_action(allowed_tag.ak_page_id, user_id)
     if request.is_ajax():
         return HttpResponse(action['action']['id'])
+    messages.success(request, u'Added tag: %s' % allowed_tag.tag_name)
     return redirect("detail", user_id)
 
 def remove_user_tag(request, user_id, tag_id):
