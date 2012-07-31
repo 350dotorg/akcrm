@@ -419,7 +419,7 @@ def search_json(request):
                 url=user.get_absolute_url(),
                 name=unicode(user),
                 email=user.email,
-                phone=unicode(user.phone() or ''),
+                phone=unicode(user.phone or ''),
                 country=user.country,
                 state=user.state,
                 city=user.city,
@@ -654,7 +654,15 @@ def detail_json(request, user_id):
     
 def _detail(request, user_id):
     try:
-        agent = CoreUser.objects.using("ak").get(id=user_id)
+        agent = CoreUser.objects.using("ak").extra(select={'phone': (
+                "SELECT `phone` FROM `core_phone` "
+                "WHERE `core_phone`.`user_id`=`core_user`.`id` "
+                "LIMIT 1"),
+                                'organization': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="organization" LIMIT 1'),
+                                }).get(id=user_id)
     except CoreUser.DoesNotExist:
         return HttpResponseNotFound("No such record exists")
 
