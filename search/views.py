@@ -394,6 +394,7 @@ def search(request):
         resp['Location'] += "%s" % qsify(request.GET)
         return resp
     ctx = _search(request)
+    ctx['ACTIONKIT_URL'] = settings.ACTIONKIT_URL
     users = ctx['users']
 
     return ctx

@@ -201,6 +201,7 @@
   <tr>
     <th>Name</th>
     <th>Email</th>
+    <th>ActionKit</th>
     <th>Phone</th>
     <th>Country</th>
     <th>State</th>
@@ -217,6 +218,10 @@
 	{{ user|default:"" }}</a></td>
     <td><a class="expand" href="{{ user.get_absolute_url }}">
 	{{ user.email|default:"" }}</a></td>
+    <td>
+      <a target="_blank"
+         href="{{ ACTIONKIT_URL }}/admin/core/user/{{ user.id }}/">Edit</a>
+    </td>
     <td>{{ user.phone|default:"" }}</td>
     <td>{{ user.country|default:"" }}</td>
     <td>{{ user.state|default:"" }}</td>
