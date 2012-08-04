@@ -68,7 +68,7 @@ class CoreUser(models.Model):
         return dict(
             name=unicode(agent),
             email=agent.email,
-            phone=agent.phone(),
+            phone=agent.phone or '',
             zip=agent.zip,
             address=agent.formatted_address(),
             skills=agent.custom_fields().get('skills', []),
