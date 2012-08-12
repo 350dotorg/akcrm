@@ -108,7 +108,8 @@ def make_zip_radius_query(users, query_data, values, search_on, extra_data={}):
             human_query = "not in zip code %s" % zipcode
     return users, human_query
 
-def make_contact_history_query(users, query_data, values, search_on, extra_data={}):
+
+def make_contact_since_query(users, query_data, values, search_on, extra_data={}):
     contacted_since = values[0]
     match = dateutil.parser.parse(contacted_since)
     search = ContactRecord.objects.filter(completed_at__gt=match)
@@ -117,6 +118,28 @@ def make_contact_history_query(users, query_data, values, search_on, extra_data=
         contacted_by = extra_data['contacted_by']
         search = search.filter(user__username=contacted_by)
         human_query.append("by %s" % contacted_by)
+    akids = list(search.values_list("akid", flat=True))
+    if len(akids) == 0:
+        ## TODO give a helpful error message, not a mysterious always-null query
+        akids = [0]
+    if extra_data.get('istoggle', True):
+        users = users.filter(id__in=akids)
+        human_query = " ".join(human_query)
+    else:
+        users = users.exclude(id__in=akids)
+        human_query = 'not %s' % (" ".join(human_query))
+    return users, human_query
+
+
+def make_contact_by_query(users, query_data, values, search_on, extra_data={}):
+    contacted_by = values[0]
+    search = ContactRecord.objects.filter(user__username=contacted_by)
+    human_query = ["contacted by %s" % contacted_by]
+    if 'contacted_since' in extra_data:
+        contacted_since = extra_data['contacted_since']
+        match = dateutil.parser.parse(contacted_since)
+        search = search.filter(completed_at__gt=match)
+        human_query.append("since %s" % contacted_since)
     akids = list(search.values_list("akid", flat=True))
     if len(akids) == 0:
         ## TODO give a helpful error message, not a mysterious always-null query
@@ -250,7 +273,10 @@ QUERIES = {
         'query_fn': make_zip_radius_query,
         },
     'contacted_since': {
-        'query_fn': make_contact_history_query,
+        'query_fn': make_contact_since_query,
+        },
+    'contacted_by': {
+        'query_fn': make_contact_by_query,
         },
     'emails_opened': {
         'query_fn': make_emails_opened_query,
@@ -370,6 +396,7 @@ def home(request):
              ('source', 'Source'),
              ('tag', 'Is tagged with'),
              ('contacted_since', "Contacted Since"),
+             ('contacted_by', "Contacted By"),
              ('emails_opened', "Emails Opened"),
              ('more_actions', "More Actions Since"),
              ('donated_more', "Donated Amount More Than"),
@@ -482,6 +509,8 @@ def _search(request):
             ## same for "contacted_by", in a group with "contacted_since"
             if item == "contacted_since__contacted_by":
                 continue
+            if item == "contacted_by__contacted_since":
+                continue
             ## ditto
             if item == 'more_actions__since':
                 continue
@@ -516,6 +545,11 @@ def _search(request):
                 contacted_by = request.GET.get('%s_contacted_since__contacted_by' % include_group[0])
                 if contacted_by:
                     extra_data['contacted_by'] = contacted_by
+
+            if item == "contacted_by":
+                contacted_since = request.GET.get('%s_contacted_by__contacted_since' % include_group[0])
+                if contacted_since:
+                    extra_data['contacted_since'] = contacted_since
 
             if item == "emails_opened":
                 since = request.GET.get('%s_emails_opened__since' % include_group[0])
