@@ -14,6 +14,7 @@ urlpatterns = patterns(
     url(r'^choices/pages/$', 'pages', name='choices_pages'),
 
     url(r'^autocomplete/sources/$', 'sources', name='autocomplete_sources'),
+    url(r'^autocomplete/organizations/$', 'organizations', name='autocomplete_organizations'),
 
     url(r'^search/$', 'search', name='search'),
     url(r'^search/json/$', 'search_json', name='search_json'),

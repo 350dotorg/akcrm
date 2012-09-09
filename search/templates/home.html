@@ -252,15 +252,13 @@ console.log(anchor);
     {% endfor %}
   </select>
 
-  <select id="template_organization"
-    name="organization"
-    multiple="multiple">
-    {% for item in organizations %}
-    <option value="{{item}}">
-      {{item}}
-    </option>
-    {% endfor %}
-  </select>
+  <input
+     id="template_organization"
+     type="text"
+     name="organization"
+     multiple="multiple"
+     autocomplete="{% url autocomplete_organizations %}"
+     />
 
   <select id="template_skills"
     name="skills"

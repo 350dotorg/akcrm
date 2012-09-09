@@ -343,6 +343,33 @@ def pages(request):
 
 
 @allow_http("GET")
+def organizations(request):
+    prefix = request.GET.get('q')
+    limit = request.GET.get('limit', '10')
+    try:
+        limit = int(limit)
+    except ValueError:
+        limit = 10
+    limit = clamp(limit, 1, 1000)
+    if prefix:
+        cursor = connections['ak'].cursor()
+        prefix = prefix + '%'
+        cursor.execute("SELECT distinct value FROM core_userfield "
+                       "WHERE name LIKE \"organization\" and value LIKE %s ORDER BY value LIMIT %s",
+                       [prefix, limit])
+        values = [row[0] for row in cursor.fetchall()]
+        if not values:
+            prefix = '%' + prefix
+            cursor.execute("SELECT distinct value FROM core_userfield "
+                           "WHERE name LIKE \"organization\" and value LIKE %s ORDER BY value LIMIT %s",
+                           [prefix, limit])
+            values = [row[0] for row in cursor.fetchall()]
+    else:
+        values = []
+
+    return HttpResponse(json.dumps(values), content_type='application/json')
+
+@allow_http("GET")
 def sources(request):
     prefix = request.GET.get('q')
     limit = request.GET.get('limit', '10')
