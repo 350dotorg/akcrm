@@ -94,6 +94,7 @@
     <div class="span10">
       <ul class="nav nav-tabs">
 	<li class="active"><a href="#contact-history" data-toggle="tab">Contact History</a></li>
+	<li><a href="#contact-form" data-toggle="tab">Add Contact Record</a></li>
 	<li><a href="#action-history" data-toggle="tab">Action History</a></li>
 	<li><a href="#donation-history" data-toggle="tab">Donation History</a></li>
 	<li><a href="#mailing-history" data-toggle="tab">Mailing History</a></li>
@@ -109,6 +110,21 @@
 	    {{ /contact_history }}
 	  </ol>
 	</div>
+	<!-- TODO: hide if user doesn't have permission -->
+	<div class="tab-pane" id="contact-form">
+	  <h4 class="heading">Add Contact Record</h4>
+	  <form method="POST" action="/contacts/{{ agent.id }}/">
+	    <input type="hidden" name="akid" value="{{ agent.id }}" />
+	    {% endverbatim %}
+	    {% csrf_token %}
+	    {% with contact_form as form %}
+	    {% include "_form.html" %}
+	    {% endwith %}
+	    {% verbatim %}
+	    <input class="btn" type="submit" value ="Add Contact Record" />
+	  </form>
+	</div>
+	<!-- END TODO -->
 	<div class="tab-pane" id="action-history">
 	  <h4 class="heading">Actions <a href="#">(View all)</a></h4>
 	  <ol>

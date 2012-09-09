@@ -23,7 +23,10 @@ from akcrm.permissions import authorize
 @allow_http("POST")
 @rendered_with("_form.html")
 def contacts_for_user(request, akid):
-    form = ContactForm(data=request.POST)
+    akid = [i for i in request.POST.getlist('akid') if i and i.strip()][0]
+    post = request.POST.copy()
+    post['akid'] = akid
+    form = ContactForm(data=post)
     if form.is_valid():
         contact = form.save()
         messages.success(request, u'Contact saved')

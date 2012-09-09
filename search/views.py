@@ -451,6 +451,12 @@ def search(request):
     ctx['ACTIONKIT_URL'] = settings.ACTIONKIT_URL
     users = ctx['users']
 
+    if getattr(request.PERMISSIONS, 'add_contact_record'):
+        contact_form = ContactForm(initial={
+                'user': request.user,
+                })
+        ctx['contact_form'] = contact_form
+
     return ctx
 
 @allow_http("GET")
