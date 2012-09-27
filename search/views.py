@@ -246,9 +246,9 @@ QUERIES = {
     'tag': {
         'query': "actions__page__pagetags__tag__id",
         },
-    'organization': {
+    'campus': {
         'query': "fields__value",
-        'extra': {"fields__name": "organization"},
+        'extra': {"fields__name": "campus"},
         },
     'skills': {
         'query': "fields__value",
@@ -343,7 +343,7 @@ def pages(request):
 
 
 @allow_http("GET")
-def organizations(request):
+def campuses(request):
     prefix = request.GET.get('q')
     limit = request.GET.get('limit', '10')
     try:
@@ -355,13 +355,13 @@ def organizations(request):
         cursor = connections['ak'].cursor()
         prefix = prefix + '%'
         cursor.execute("SELECT distinct value FROM core_userfield "
-                       "WHERE name LIKE \"organization\" and value LIKE %s ORDER BY value LIMIT %s",
+                       "WHERE name=\"campus\" and value LIKE %s ORDER BY value LIMIT %s",
                        [prefix, limit])
         values = [row[0] for row in cursor.fetchall()]
         if not values:
             prefix = '%' + prefix
             cursor.execute("SELECT distinct value FROM core_userfield "
-                           "WHERE name LIKE \"organization\" and value LIKE %s ORDER BY value LIMIT %s",
+                           "WHERE name=\"campus\" and value LIKE %s ORDER BY value LIMIT %s",
                            [prefix, limit])
             values = [row[0] for row in cursor.fetchall()]
     else:
@@ -398,7 +398,7 @@ def home(request):
 
     pages = CorePage.objects.using("ak").all().order_by("title")
 
-    organizations = CoreUserField.objects.using("ak").filter(name="organization").values_list("value", flat=True).distinct().order_by("value")
+    campuses = CoreUserField.objects.using("ak").filter(name="campus").values_list("value", flat=True).distinct().order_by("value")
 
     skills = CoreUserField.objects.using("ak").filter(name="skills").values_list("value", flat=True).distinct().order_by("value")
 
@@ -430,7 +430,7 @@ def home(request):
              ('donated_times', "Donated Times More Than"),
              ),
         'About':
-            (('organization', "Organization"),
+            (('campus', "Campus"),
              ('skills', "Skills"),
              ('language', "Preferred Language"),
              ('created_before', "Created Before"),
@@ -484,7 +484,7 @@ def search_json(request):
                 country=user.country,
                 state=user.state,
                 city=user.city,
-                organization=user.organization(),
+                campus=user.campus(),
                 created_at=user.created_at.strftime("%m/%d/%Y"),
                 ))
     users_json = json.dumps(users_json)
@@ -650,10 +650,10 @@ def _search(request):
                 "SELECT `phone` FROM `core_phone` "
                 "WHERE `core_phone`.`user_id`=`core_user`.`id` "
                 "LIMIT 1"),
-                                'organization': (
+                                'campus': (
                 "SELECT `value` from `core_userfield` "
                 "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
-                'AND `core_userfield`.`name`="organization" LIMIT 1'),
+                'AND `core_userfield`.`name`="campus" LIMIT 1'),
                                 })
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
@@ -726,10 +726,10 @@ def _detail(request, user_id):
                 "SELECT `phone` FROM `core_phone` "
                 "WHERE `core_phone`.`user_id`=`core_user`.`id` "
                 "LIMIT 1"),
-                                'organization': (
+                                'campus': (
                 "SELECT `value` from `core_userfield` "
                 "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
-                'AND `core_userfield`.`name`="organization" LIMIT 1'),
+                'AND `core_userfield`.`name`="campus" LIMIT 1'),
                                 }).get(id=user_id)
     except CoreUser.DoesNotExist:
         return HttpResponseNotFound("No such record exists")

@@ -72,6 +72,7 @@ class CoreUser(models.Model):
             zip=agent.zip,
             address=agent.formatted_address(),
             skills=agent.custom_fields().get('skills', []),
+            campus=agent.custom_fields().get('campus', None),
             id=agent.id,
             )
 

@@ -24,7 +24,7 @@
             "<a class='expand' href='" + user.url + "'>" + user.name + "</a>",
             "<a class='expand' href='" + user.url + "'>" + user.email + "</a>",
             user.phone,
-	    user.country, user.state, user.city, user.organization, user.created_at
+	    user.country, user.state, user.city, user.campus, user.created_at
 	  ]);
         }
       }
@@ -222,7 +222,7 @@
     <th>Country</th>
     <th>State</th>
     <th>City</th>
-    <th>Organization</th>
+    <th>Campus</th>
     <th>Sign-up Date</th>
   </tr>
   </thead>
@@ -242,7 +242,7 @@
     <td>{{ user.country|default:"" }}</td>
     <td>{{ user.state|default:"" }}</td>
     <td>{{ user.city|default:"" }}</td>
-    <td>{{ user.organization|default:"" }}</td>
+    <td>{{ user.campus|default:"" }}</td>
     <td>{{ user.created_at|date:"Y/m/d" }}</td>
   </tr>
   {% endifchanged %}
