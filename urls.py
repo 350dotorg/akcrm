@@ -30,6 +30,7 @@ urlpatterns = patterns(
 
     url(r'^record/(?P<user_id>\d+)/$', 'detail', name='detail'),
     url(r'^record/(?P<user_id>\d+)/json/$', 'detail_json', name='detail_json'),
+    url(r'^record/(?P<user_id>\d+)/supplemental/$', 'supplemental_details_json', name='supplemental_details_json'),
 
     url(r'^record/(?P<user_id>\d+)/skills/$', 'edit_skills', 
         name='edit_skills'),

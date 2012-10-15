@@ -25,6 +25,7 @@ import dateutil.parser
 import json
 import os.path
 import re
+import urllib2
 from operator import attrgetter
 from operator import itemgetter
 
@@ -792,6 +793,32 @@ def _detail(request, user_id):
     allowed_tags = [tag for tag in _allowed_tags if tag.tag_name not in _agent_tags]
 
     return locals()
+
+
+def fetch_contact_details(email):
+    url = ('https://api.fullcontact.com/v2/person.json?email=%s&apiKey=%s'
+            % (email, settings.FULLCONTACT_API))
+    try:
+        response = urllib2.urlopen(url)
+        result = response.read()
+        jsondata = json.loads(result)
+    except urllib2.HTTPError:
+        jsondata = dict(status=500,
+                        message='Error retrieving supplemental data')
+    return jsondata
+
+
+@allow_http("GET")
+def supplemental_details_json(request, user_id):
+    try:
+        agent = CoreUser.objects.using("ak").get(id=user_id)
+    except CoreUser.DoesNotExist:
+        raise Http404("No user: %s" % user_id)
+    email = agent.email
+    contact_details = fetch_contact_details(email)
+    return HttpResponse(json.dumps(contact_details),
+                        content_type="application/json")
+
 
 @authorize("edit_user")
 @allow_http("POST")

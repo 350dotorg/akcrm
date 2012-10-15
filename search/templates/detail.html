@@ -146,7 +146,7 @@
   <br />
 {% endif %}
 
-<div class="row">
+<div id="person-details" class="row">
   <div class="span12 header-compact" style="margin-bottom: 2em">
     <h2>{{ agent }}</h2>
 
@@ -410,6 +410,183 @@
       });
     });
   });
+</script>
+
+<script type="text/javascript">
+(function($) {
+
+  if (window.location.search !== '?debug') {
+    return;
+  }
+
+  var agentId = '{{ agent.id }}';
+  var fetchUrl = '{% url supplemental_details_json agent.id %}'
+  fetchSupplementalData(1);
+
+  function fetchSupplementalData(attempt) {
+
+    $.getJSON(fetchUrl, function(data) {
+
+      var ds = data['status'];
+      if (!ds) {
+        return;
+      }
+      var extraDetailsContainer = $('#contact-extra-details').first();
+      if (extraDetailsContainer.length) {
+        extraDetailsContainer.empty();
+      } else {
+        extraDetailsContainer = $('<div />',
+          {'class': 'span5', 'style': 'margin-top: 1em; max-height: inherit',
+           'id': 'contact-extra-details'});
+      }
+
+      var personDetails = $('#person-details');
+      personDetails.append(extraDetailsContainer);
+
+      if (ds === 202 || ds === 500) {
+        extraDetailsContainer.append(
+          $('<p />').text(
+            'Supplemental data not available ... retrying in 30 seconds'));
+        extraDetailsContainer.append(
+          $('<p />').text('Attempted tries: ' + attempt));
+        extraDetailsContainer.append(
+          $('<img />', {src: '/static/spinner.gif'}));
+        setTimeout(function() { fetchSupplementalData(attempt+1); }, 30000);
+        return;
+      }
+
+      var imageElt = $('#profile_photo img').first();
+      if (imageElt.length && data['photos']) {
+        imageElt.hover(function() { imageElt.css('cursor', 'pointer'); },
+                       function() { imageElt.css('cursor', 'default'); });
+        var imageIdx = 0;
+        var photos = data['photos'];
+        var photosLength = photos.length;
+        function setPhoto(photo) {
+          imageElt.attr('src', photo['url']);
+          imageElt.attr('title', photo['typeName']);
+        }
+        imageElt.click(function() {
+          imageIdx = (imageIdx + 1) % photosLength;
+          var photo = photos[imageIdx];
+          setPhoto(photo);
+        });
+        setPhoto(data['photos'][0]);
+      }
+
+      var personData = [];
+      function addData(title, value) {
+        personData.push([title, value]);
+      }
+
+      var demographics = data['demographics'];
+      if (demographics) {
+        if (demographics['age']) {
+          addData('Age', demographics['age']);
+        }
+        if (demographics['ageRange']) {
+          addData('Age range', demographics['ageRange']);
+        }
+        if (demographics['gender']) {
+          addData('Gender', demographics['gender']);
+        }
+      }
+
+      var contactInfo = data['contactInfo'];
+      if (contactInfo) {
+        if (contactInfo['websites']) {
+          var websites = [];
+          $.each(contactInfo['websites'], function(i, website) {
+            if (website['url']) {
+              websites.push(website['url']);
+            }
+          });
+          addData('Websites', websites);
+        }
+      }
+
+      if (data['organizations']) {
+        var orgs = [];
+        $.each(data['organizations'], function(i, org) {
+          if (org['name']) {
+            orgs.push(org['name']);
+          }
+        });
+        addData('Organizations', orgs);
+      }
+
+      var socialProfiles = data['socialProfiles'];
+      if (socialProfiles) {
+        $.each(socialProfiles, function(i, profile) {
+          var typeName = profile['typeName'];
+          var url = profile['url'];
+          if (typeName && url) {
+            addData(typeName, url);
+          }
+        });
+      }
+
+      var dataContainer = $('<div />', {'class': 'inner-border',
+                                        'style': 'max-height: inherit'});
+      extraDetailsContainer.append(dataContainer);
+
+      function createValueNode(value) {
+        function linkOrText(x) {
+          if (x.indexOf('http://') === 0 ||
+              x.indexOf('https://') === 0) {
+            return $('<a />', {href: x}).text(x);
+          } else {
+            return $('<span />').text(x);
+          }
+        }
+
+        if (typeof value === 'string') {
+          return linkOrText(value);
+        } else if (typeof value === 'object') {
+          var container = $('<span />');
+          $.each(value, function(i, value) {
+            if (i !== 0) {
+              container.append(', ');
+            }
+            container.append(linkOrText(value));
+          });
+          return container;
+        }
+      }
+
+      $.each(personData, function(i, datarow) {
+        var title = datarow[0];
+        var value = datarow[1];
+        if (title && value) {
+          dataContainer.append($('<p />')
+            .append($('<strong />').text(title + ':'))
+            .append('&nbsp;')
+            .append(createValueNode(value))
+          );
+        }
+      });
+
+      if (JSON && JSON.stringify) {
+        var rawDetailsLink = $('<a />', {href: '#'}).text('raw details');
+        rawDetailsLink.click(function() {
+          var text = JSON.stringify(data);
+          $(this).replaceWith($('<p />').text(text));
+          rawContainer.css({height: '400px', overflow: 'scroll'});
+          return false;
+        });
+        var rawContainer = $('<div />', {id: 'raw-details'});
+        rawContainer.append(rawDetailsLink);
+        personDetails.append(rawContainer);
+        rawContainer.css({
+            'margin-top': '1em',
+            'float': 'right',
+            'width': '500px',
+            'height': '50px'
+            });
+      }
+    });
+  }
+})(jQuery);
 </script>
 
 {% endblock %}
