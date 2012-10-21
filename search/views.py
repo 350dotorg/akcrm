@@ -954,8 +954,7 @@ def safe_encode(value):
 def user_to_csv_row(user, fields):
     row = []
     for field in fields:
-        value = getattr(user, field, '')
-        # phone is only callable field so far
+        value = getattr(user, field, '') or ''
         if callable(value):
             value = value()
         value = safe_encode(value)
@@ -970,12 +969,12 @@ def search_csv(request):
     user_fields = ['first_name', 'last_name', 'email',
                    'address1', 'address2', 'city', 'state', 'region',
                    'postal', 'zip', 'country',
-                   'source', 'subscription_status', 'phone']
+                   'source', 'subscription_status', 'phone', 'campus']
     fields = request.GET.getlist('fields')
     if not fields:
         return dict(fields=user_fields,
                     request=request)
-    
+
     buffer = StringIO()
     writer = csv.writer(buffer)
     writer.writerow(fields)
