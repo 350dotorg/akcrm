@@ -972,7 +972,12 @@ def search_csv(request):
                    'source', 'subscription_status', 'phone', 'campus']
     fields = request.GET.getlist('fields')
     if not fields:
+        keyvals = []
+        for key in request.GET.keys():
+            for value in request.GET.getlist(key):
+                keyvals.append((key, value))
         return dict(fields=user_fields,
+                    keyvals=keyvals,
                     request=request)
 
     buffer = StringIO()

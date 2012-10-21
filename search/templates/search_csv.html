@@ -10,7 +10,7 @@
   <form method="GET"
         action="{% url search_csv %}">
     
-    {% for key,value in request.GET.items %}
+    {% for key,value in keyvals %}
       <input type="hidden" name="{{key}}" value="{{value}}" />
     {% endfor %}
 
