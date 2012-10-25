@@ -444,13 +444,6 @@
       personDetails.append(extraDetailsContainer);
 
       if (dataStatus === 202 || dataStatus === 500) {
-        extraDetailsContainer.append(
-          $('<p />').text(
-            'Supplemental data not available ... retrying in 30 seconds'));
-        extraDetailsContainer.append(
-          $('<p />').text('Attempted tries: ' + attempt));
-        extraDetailsContainer.append(
-          $('<img />', {src: '/static/spinner.gif'}));
         setTimeout(function() { fetchSupplementalData(attempt+1); }, 30000);
         return;
       }
@@ -474,115 +467,61 @@
         setPhoto(data['photos'][0]);
       }
 
-      var personData = [];
-      function addData(title, value) {
-        personData.push([title, value]);
-      }
-
-      var demographics = data['demographics'];
-      if (demographics) {
-        if (demographics['age']) {
-          addData('Age', demographics['age']);
-        }
-        if (demographics['ageRange']) {
-          addData('Age range', demographics['ageRange']);
-        }
-        if (demographics['gender']) {
-          addData('Gender', demographics['gender']);
-        }
-      }
-
-      var contactInfo = data['contactInfo'];
-      if (contactInfo) {
-        if (contactInfo['websites']) {
-          var websites = [];
-          $.each(contactInfo['websites'], function(i, website) {
-            if (website['url']) {
-              websites.push(website['url']);
-            }
-          });
-          addData('Websites', websites);
-        }
-      }
-
+      var organizations = [];
       if (data['organizations']) {
-        var orgs = [];
         $.each(data['organizations'], function(i, org) {
           if (org['name']) {
-            orgs.push(org['name']);
+            organizations.push(org['name']);
           }
         });
-        addData('Organizations', orgs);
       }
 
-      var socialProfiles = data['socialProfiles'];
-      if (socialProfiles) {
-        $.each(socialProfiles, function(i, profile) {
+      var socialLinks = [];
+      if (data['socialProfiles']) {
+        $.each(data['socialProfiles'], function(i, profile) {
           var typeName = profile['typeName'];
           var url = profile['url'];
           if (typeName && url) {
-            addData(typeName, url);
+            socialLinks.push({typeName: typeName, url: url});
           }
         });
       }
 
-      var dataContainer = $('<div />', {'class': 'inner-border',
-                                        'style': 'max-height: inherit'});
-      extraDetailsContainer.append(dataContainer);
-
-      function createValueNode(value) {
-        function linkOrText(x) {
-          if (x.indexOf('http://') === 0 ||
-              x.indexOf('https://') === 0) {
-            return $('<a />', {href: x}).text(x);
-          } else {
-            return $('<span />').text(x);
-          }
-        }
-
-        if (typeof value === 'string') {
-          return linkOrText(value);
-        } else if (typeof value === 'object') {
-          var container = $('<span />');
-          $.each(value, function(i, value) {
-            if (i !== 0) {
-              container.append(', ');
-            }
-            container.append(linkOrText(value));
-          });
-          return container;
-        }
+      if (organizations.length > 0) {
+        var container = $('#content-box div').first();
+        container.append(
+            $('<p />')
+            .append($('<strong />').text('Organizations: '))
+            .append($('<span />').text(organizations.join(', '))));
+        container.css('min-height', '220px');
+        container.css('max-height', '220px');
       }
 
-      $.each(personData, function(i, datarow) {
-        var title = datarow[0];
-        var value = datarow[1];
-        if (title && value) {
-          dataContainer.append($('<p />')
-            .append($('<strong />').text(title + ':'))
-            .append('&nbsp;')
-            .append(createValueNode(value))
-          );
-        }
-      });
+      if (socialLinks.length > 0) {
+        var tabs = $('.nav-tabs').first();
+        tabs.append(
+            $('<li />')
+            .append(
+              $('<a />', {'data-toggle': 'tab', href: '#social-links'})
+              .text('Social')));
 
-      if (JSON && JSON.stringify) {
-        var rawDetailsLink = $('<a />', {href: '#'}).text('raw details');
-        rawDetailsLink.click(function() {
-          var text = JSON.stringify(data);
-          $(this).replaceWith($('<p />').text(text));
-          rawContainer.css({height: '400px', overflow: 'scroll'});
-          return false;
+        var tabContentContainer = $('.tab-content').first();
+        var ul = $('<ul />');
+        socialLinks.sort(function(a, b) {
+          var x = a.typeName,
+              y = b.typeName;
+          return x < y ? -1 : x > y ? 1 : 0;
         });
-        var rawContainer = $('<div />', {id: 'raw-details'});
-        rawContainer.append(rawDetailsLink);
-        personDetails.append(rawContainer);
-        rawContainer.css({
-            'margin-top': '1em',
-            'float': 'right',
-            'width': '500px',
-            'height': '50px'
-            });
+        $.each(socialLinks, function(i, linkData) {
+          ul.append(
+            $('<li />')
+            .append(
+              $('<a />', {href: linkData.url}).text(linkData.typeName)));
+        });
+
+        tabContentContainer.append(
+            $('<div />', {id: 'social-links', 'class': 'tab-pane'})
+            .append(ul));
       }
     });
   }
