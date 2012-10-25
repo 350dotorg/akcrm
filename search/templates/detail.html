@@ -427,8 +427,8 @@
 
     $.getJSON(fetchUrl, function(data) {
 
-      var ds = data['status'];
-      if (!ds) {
+      var dataStatus = data['status'];
+      if (!dataStatus) {
         return;
       }
       var extraDetailsContainer = $('#contact-extra-details').first();
@@ -443,7 +443,7 @@
       var personDetails = $('#person-details');
       personDetails.append(extraDetailsContainer);
 
-      if (ds === 202 || ds === 500) {
+      if (dataStatus === 202 || dataStatus === 500) {
         extraDetailsContainer.append(
           $('<p />').text(
             'Supplemental data not available ... retrying in 30 seconds'));
