@@ -454,17 +454,30 @@
                        function() { imageElt.css('cursor', 'default'); });
         var imageIdx = 0;
         var photos = data['photos'];
-        var photosLength = photos.length;
+        photos.sort(function(a, b) {
+          var x = a.typeId;
+              y = b.typeId;
+          if (x === y) {
+            // can have multiple results of same type
+            // stable sort if so
+            return a.url < b.url ? -1 : a.url > b.url ? 1 : 0;
+          }
+          // linkedin < facebook < everything else
+          if (x === 'linkedin') { return -1; }
+          if (y === 'linkedin') { return 1; }
+          if (x === 'facebook') { return -1; }
+          if (y === 'facebook') { return 1; }
+          return x < y ? -1 : x > y ? 1 : 0;
+        });
         function setPhoto(photo) {
-          imageElt.attr('src', photo['url']);
+          imageElt.attr('src',   photo['url']);
           imageElt.attr('title', photo['typeName']);
         }
         imageElt.click(function() {
-          imageIdx = (imageIdx + 1) % photosLength;
-          var photo = photos[imageIdx];
-          setPhoto(photo);
+          imageIdx = (imageIdx + 1) % photos.length;
+          setPhoto(photos[imageIdx]);
         });
-        setPhoto(data['photos'][0]);
+        setPhoto(photos[0]);
       }
 
       var organizations = [];
