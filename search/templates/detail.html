@@ -415,10 +415,6 @@
 <script type="text/javascript">
 (function($) {
 
-  if (window.location.search !== '?debug') {
-    return;
-  }
-
   var agentId = '{{ agent.id }}';
   var fetchUrl = '{% url supplemental_details_json agent.id %}'
   fetchSupplementalData(1);
