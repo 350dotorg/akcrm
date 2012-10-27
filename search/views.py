@@ -81,7 +81,6 @@ def make_date_query(users, query_data, values, search_on, extra_data={}):
 
 def make_zip_radius_query(users, query_data, values, search_on, extra_data={}):
     zipcode = values[0]
-    zipcode = int(zipcode)
     if 'distance' in extra_data:
         distance = extra_data['distance']
         distance = float(distance)
