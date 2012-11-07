@@ -952,15 +952,26 @@ def safe_encode(value):
     return str(value)
 
 
-def user_to_csv_row(user, fields):
+def user_to_csv_row(user, fields, field_fns):
     row = []
     for field in fields:
-        value = getattr(user, field, '') or ''
-        if callable(value):
-            value = value()
+        field_fn = field_fns.get(field, None)
+        if field_fn is not None:
+            value = field_fn(user)
+        else:
+            value = getattr(user, field, '') or ''
+            if callable(value):
+                value = value()
         value = safe_encode(value)
         row.append(value)
     return row
+
+
+def corefield_value(field_name):
+    def get_corefield(user):
+        values = [f.value for f in user.fields.all() if f.name == field_name]
+        return ','.join(values)
+    return get_corefield
 
 
 @authorize("search_export")
@@ -970,7 +981,10 @@ def search_csv(request):
     user_fields = ['first_name', 'last_name', 'email',
                    'address1', 'address2', 'city', 'state', 'region',
                    'postal', 'zip', 'country',
-                   'source', 'subscription_status', 'phone', 'campus']
+                   'source', 'subscription_status', 'phone', 'campus',
+                   'skills', 'engagement_level']
+    field_fns = dict(skills=corefield_value('skills'),
+                     engagement_level=corefield_value('engagement_level'))
     fields = request.GET.getlist('fields')
     if not fields:
         keyvals = []
@@ -986,7 +1000,7 @@ def search_csv(request):
     writer.writerow(fields)
     users = _search(request)['users']
     for user in users:
-        row = user_to_csv_row(user, fields)
+        row = user_to_csv_row(user, fields, field_fns)
         writer.writerow(row)
     response = HttpResponse(buffer.getvalue())
     response['Content-Type'] = 'text/csv'
