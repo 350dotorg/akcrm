@@ -273,6 +273,16 @@ console.log(anchor);
     {% endfor %}
   </select>
 
+  <select id="template_engagement_level"
+    name="engagement_level"
+    multiple="multiple">
+    {% for item in engagement_levels %}
+    <option value="{{item}}">
+      {{item}}
+    </option>
+    {% endfor %}
+  </select>
+
   <select id="template_language"
     name="language"
     multiple="multiple">
