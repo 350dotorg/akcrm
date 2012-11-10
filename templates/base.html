@@ -276,7 +276,9 @@ $(document).scroll(function(){
         if ($('.subnav').hasClass('subnav-fixed')) return;
         // Remember top position
         var offset = $('.subnav').offset()
-        $('.subnav').attr('data-top', offset.top);
+        if (offset) {
+          $('.subnav').attr('data-top', offset.top);
+        }
     }
 
     if ($('.subnav').attr('data-top') - $('.subnav').outerHeight() <= $(this).scrollTop())
