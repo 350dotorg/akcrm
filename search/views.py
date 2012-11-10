@@ -258,6 +258,10 @@ QUERIES = {
         'query': "fields__value",
         'extra': {"fields__name": "engagement_level"},
         },
+    'student': {
+        'query': "fields__value",
+        'extra': {"fields__name": "student"},
+        },
     'language': {
         'query': "lang__id",
         },
@@ -435,6 +439,7 @@ def home(request):
              ('skills', "Skills"),
              ('engagement_level', "Engagement Level"),
              ('language', "Preferred Language"),
+             ('student', "Student"),
              ('created_before', "Created Before"),
              ('created_after', "Created After"),
              ),

@@ -43,14 +43,19 @@ console.log(anchor);
         var newEl = $("#template_" + val).clone();
         newEl.removeAttr("id").addClass("searchParam");
         var newElWrapper = $("<div>").addClass("searchParamContainer");
-        var isToggleElt = $("#template_istoggle").clone();
-        isToggleElt.removeAttr("id");
-        isToggleElt.show();
-        isToggleElt.appendTo(newElWrapper);
+        if (newEl.hasClass('no-choice')) {
+          var hiddenInput = newEl.find('input[type=hidden]');
+          hiddenInput.attr('name', $(this).attr('name') + "_" + newEl.attr("name"));
+        } else {
+          var isToggleElt = $("#template_istoggle").clone();
+          isToggleElt.removeAttr("id");
+          isToggleElt.show();
+          isToggleElt.appendTo(newElWrapper);
+          isToggleElt.attr("name", newEl.attr("name") + "_" + isToggleElt.attr("name"));
+          newEl.attr("name", $(this).attr("name") + "_" + newEl.attr("name"));
+        }
         newEl.appendTo(newElWrapper);
-        newEl.attr("name", $(this).attr("name") + "_" + newEl.attr("name"));
         newEl.show();
-        isToggleElt.attr("name", newEl.attr("name") + "_" + isToggleElt.attr("name"));
         newElWrapper.appendTo(that);
         if( newEl[0].tagName == "SELECT" ) {
           if( newEl.data("filtertype") == "state" ) {
@@ -282,6 +287,13 @@ console.log(anchor);
     </option>
     {% endfor %}
   </select>
+
+  <div id="template_student"
+    name="student"
+    class="no-choice">
+    <label style="margin-left: 0.5em">Searching for students</label>
+    <input type="hidden" name="student" value="yes" />
+  </div>
 
   <select id="template_language"
     name="language"
