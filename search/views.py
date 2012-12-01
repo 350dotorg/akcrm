@@ -262,6 +262,10 @@ QUERIES = {
         'query': "fields__value",
         'extra': {"fields__name": "student"},
         },
+    'affiliation': {
+        'query': "fields__value",
+        'extra': {"fields__name": "affiliation"},
+        },
     'language': {
         'query': "lang__id",
         },
@@ -406,6 +410,7 @@ def home(request):
 
     skills = CoreUserField.objects.using("ak").filter(name="skills").values_list("value", flat=True).distinct().order_by("value")
     engagement_levels = CoreUserField.objects.using("ak").filter(name="engagement_level").values_list("value", flat=True).distinct().order_by("value")
+    affiliations = CoreUserField.objects.using("ak").filter(name="affiliation").values_list("value", flat=True).distinct().order_by("value")
 
     languages = CoreLanguage.objects.using("ak").all().distinct().order_by("name")
 
@@ -440,6 +445,7 @@ def home(request):
              ('engagement_level', "Engagement Level"),
              ('language', "Preferred Language"),
              ('student', "Student"),
+             ('affiliation', "Affiliation"),
              ('created_before', "Created Before"),
              ('created_after', "Created After"),
              ),

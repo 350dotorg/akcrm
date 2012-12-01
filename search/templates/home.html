@@ -288,6 +288,16 @@ console.log(anchor);
     {% endfor %}
   </select>
 
+  <select id="template_affiliation"
+    name="affiliation"
+    multiple="multiple">
+    {% for item in affiliations %}
+    <option value="{{item}}">
+      {{item}}
+    </option>
+    {% endfor %}
+  </select>
+
   <div id="template_student"
     name="student"
     class="no-choice">
