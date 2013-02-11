@@ -993,9 +993,10 @@ def search_csv(request):
                    'address1', 'address2', 'city', 'state', 'region',
                    'postal', 'zip', 'country',
                    'source', 'subscription_status', 'phone', 'campus',
-                   'skills', 'engagement_level']
+                   'skills', 'engagement_level', 'affiliation']
     field_fns = dict(skills=corefield_value('skills'),
-                     engagement_level=corefield_value('engagement_level'))
+                     engagement_level=corefield_value('engagement_level'),
+                     affiliation=corefield_value('affiliation'))
     fields = request.GET.getlist('fields')
     if not fields:
         keyvals = []
