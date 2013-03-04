@@ -35,6 +35,7 @@ from akcrm.crm.forms import SearchQueryForm
 from akcrm.crm.models import ContactRecord
 from akcrm.cms.models import HomePageHtml
 from akcrm.permissions import authorize
+from akcrm.search import sql
 from akcrm.search.models import AgentTag
 from akcrm.search.utils import clamp
 from akcrm.search.utils import latlon_bbox
@@ -529,9 +530,10 @@ def search_just_akids(request):
     akids = ", ".join(str(i) for i in akids)
     return HttpResponse(akids, content_type="text/plain")
 
+
 def _search(request):
-    base_user_query = CoreUser.objects.using("ak").order_by(
-        "id")
+    base_user_query = CoreUser.objects.using("ak").order_by("id")
+    #base_user_query = CoreUser.objects.order_by("id")
     
     includes = []
 
@@ -671,8 +673,15 @@ def _search(request):
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
 
+    raw_sql = sql.raw_sql_from_queryset(users)
+    resp = rest.query(raw_sql)
+    assert resp.status_code == 200
+    results = json.loads(resp.content)
+    models = map(sql.result_to_model, results)
+
     ctx['human_query'] = human_query
-    ctx['users'] = users
+    #ctx['users'] = users
+    ctx['users'] = models
     ctx['request'] = request
     request.session['akcrm.query'] = request.GET.urlencode()
     num_results = len(users)

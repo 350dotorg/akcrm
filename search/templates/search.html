@@ -230,8 +230,9 @@
   {% for user in users %}
   {% ifchanged user %}
   <tr id="user_{{ user.id }}" class="gradeA">
-    <td><a class="expand" href="{{ user.get_absolute_url }}">
-	{{ user|default:"" }}</a></td>
+    <td>
+      <a class="expand" href="{{ user.get_absolute_url }}">{{ user.first_name }} {{ user.last_name }}</a>
+    </td>
     <td><a class="expand" href="{{ user.get_absolute_url }}">
 	{{ user.email|default:"" }}</a></td>
     <td>
