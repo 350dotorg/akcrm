@@ -478,7 +478,7 @@ def search(request):
 def search_count(request):
     ctx = _search(request)
     users = ctx.pop('users')
-    num_users = users.count()
+    num_users = len(users)
     ctx['num_users'] = num_users
     return ctx
 
