@@ -505,16 +505,16 @@ def search_json(request):
     return HttpResponse(users_json, content_type="application/json")
 
 def search_raw_sql(request):
-    users = _search(request)['users']
-
-    akids = users.values_list("id", flat=True)
-    akids = list(akids)
-
-    from django.db import connections
-    query = connections['ak'].queries[0]['sql']
+    """
+    Returns the raw SQL for this search, modified to only return core_user.id 
+    since that is what is most commonly needed in Actionkit administrative
+    contexts like mail targeting.
+    """
+    query = _search(request,
+                    queryset_modifier_fn=lambda x: x.values_list("id"),
+                    return_sql_instead_of_running_it=True)
 
     ctx = dict(
-        akids=akids,
         query=query
         )
 
@@ -531,7 +531,7 @@ def search_just_akids(request):
     return HttpResponse(akids, content_type="text/plain")
 
 
-def _search(request):
+def _search(request, queryset_modifier_fn=None, return_sql_instead_of_running_it=False):
     base_user_query = CoreUser.objects.using("ak").order_by("id")
     #base_user_query = CoreUser.objects.order_by("id")
     
@@ -673,9 +673,16 @@ def _search(request):
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
 
+    if queryset_modifier_fn is not None:
+        users = queryset_modifier_fn(users)
+
     users = users.distinct()
 
     raw_sql = sql.raw_sql_from_queryset(users)
+
+    if return_sql_instead_of_running_it:
+        return raw_sql
+
     resp = rest.query(raw_sql)
     assert resp.status_code == 200
     results = json.loads(resp.content)
