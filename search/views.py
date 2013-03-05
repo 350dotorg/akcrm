@@ -524,9 +524,7 @@ def search_raw_sql(request):
 def search_just_akids(request):
     users = _search(request)['users']
 
-    akids = users.values_list("id", flat=True).distinct()
-    akids = set(list(akids))
-
+    akids = set(list(user['id'] for user in users))
     akids = ", ".join(str(i) for i in akids)
     return HttpResponse(akids, content_type="text/plain")
 
