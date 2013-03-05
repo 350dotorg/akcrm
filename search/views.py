@@ -673,6 +673,8 @@ def _search(request):
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
 
+    users = users.distinct()
+
     raw_sql = sql.raw_sql_from_queryset(users)
     resp = rest.query(raw_sql)
     assert resp.status_code == 200
