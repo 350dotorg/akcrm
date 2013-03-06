@@ -72,6 +72,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'akcrm.permissions.middleware.PermissionsMiddleware',
+    'akcrm.search.middleware.HttpQueryErrorMiddleware',
 )
 
 INTERNAL_IPS = ('127.0.0.1',)
