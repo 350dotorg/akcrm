@@ -1,4 +1,6 @@
+from actionkit import rest
 from django.db import connections
+from search.models import ActiveReport
 
 def raw_sql_from_queryset(queryset):
     dummy_queryset = queryset.using('dummy')
@@ -41,3 +43,12 @@ query_keys = [
 
 def result_to_model(result_spec):
     return dict(zip(query_keys, result_spec))
+
+def report_or_query(raw_sql, human_query, query_string):
+    slug = ActiveReport.slugify(query_string)
+    try:
+        report = ActiveReport.objects.get(slug=slug)
+    except ActiveReport.DoesNotExist:
+        return rest.query(raw_sql, human_query, query_string)
+    else:
+        return rest.poll_report(report.akid)

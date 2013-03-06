@@ -38,3 +38,15 @@ class UserSearchQuery(models.Model):
 
     user = models.ForeignKey(User)
     query = models.ForeignKey(SearchQuery)
+
+from django.template.defaultfilters import slugify
+from base64 import b64encode 
+
+class ActiveReport(models.Model):
+    
+    akid = models.IntegerField(unique=True)
+    slug = models.SlugField(max_length=64, unique=True)
+
+    @classmethod
+    def slugify(cls, sql):
+        return slugify(b64encode(sql))[:63]

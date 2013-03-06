@@ -678,30 +678,18 @@ def _search(request, queryset_modifier_fn=None, return_sql_instead_of_running_it
 
     raw_sql = sql.raw_sql_from_queryset(users)
 
+    del users
+
     if return_sql_instead_of_running_it:
         return raw_sql
 
-    resp = rest.query(raw_sql)
-    assert resp.status_code == 200
-    results = json.loads(resp.content)
+    results = sql.report_or_query(raw_sql, human_query, request.GET.urlencode())
     models = map(sql.result_to_model, results)
 
     ctx['human_query'] = human_query
-    #ctx['users'] = users
     ctx['users'] = models
     ctx['request'] = request
     request.session['akcrm.query'] = request.GET.urlencode()
-    num_results = len(users)
-
-    log = open("/tmp/aktivator.log", 'a')
-    print >> log, "%s | %s | %s | %s | %s | %s" % (
-        datetime.datetime.now(),
-        request.user.username,
-        request.GET.urlencode(),
-        users.query.sql_with_params(),
-        num_results,
-        connections['ak'].queries)
-    log.close()
 
     return ctx
 
