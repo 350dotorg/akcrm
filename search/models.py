@@ -44,6 +44,7 @@ from base64 import b64encode
 
 class ActiveReport(models.Model):
     
+    query_string = models.CharField(max_length=255, unique=True)
     akid = models.IntegerField(unique=True)
     slug = models.SlugField(max_length=64, unique=True)
 

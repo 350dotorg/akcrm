@@ -45,9 +45,8 @@ def result_to_model(result_spec):
     return dict(zip(query_keys, result_spec))
 
 def report_or_query(raw_sql, human_query, query_string):
-    slug = ActiveReport.slugify(query_string)
     try:
-        report = ActiveReport.objects.get(slug=slug)
+        report = ActiveReport.objects.get(query_string=query_string)
     except ActiveReport.DoesNotExist:
         return rest.query(raw_sql, human_query, query_string)
     else:

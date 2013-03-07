@@ -25,7 +25,7 @@ class HttpQueryErrorMiddleware(object):
         ## We'll then have a handle on the newly created report (its URL will be returned in the Location header of the API response)
         ## and also a handle on the run-of-the-report (in the location header of the second API call)
         ## and I guess we'll need to store both of those handles somewhere
-        ActiveReport(akid=handle, slug=slug).save()
+        ActiveReport(query_string=exc.query_string, akid=handle, slug=slug).save()
 
         return middleware_error(request, exc.message)
 
