@@ -467,9 +467,11 @@ def search(request):
 
     try:
         ctx = _search(request.META['QUERY_STRING'])
-        ctx = _search2(**ctx)
+        ctx = _search2(request, **ctx)
     except NonNormalQuerystring, e:
         return e.redirect(request)
+    if not isinstance(ctx, dict):
+        return ctx
 
     request.session['akcrm.query'] = ctx['query_string']
     ctx['request'] = request
@@ -549,12 +551,14 @@ def search_just_akids(request):
     try:
         ctx = _search(request.META['QUERY_STRING'],
                       queryset_modifier_fn=lambda x: x.values_list("id"))
-        ctx = _search2(**ctx)
+        ctx = _search2(request, **ctx)
     except NonNormalQuerystring, e:
         return e.redirect(request)
+    if not isinstance(ctx, dict):
+        return ctx
 
     users = ctx['users']
-    akids = set(list(user['id'] for user in users))
+    akids = set(list(user.id for user in users))
     akids = ", ".join(str(i) for i in akids)
     return HttpResponse(akids, content_type="text/plain")
 
@@ -730,8 +734,11 @@ def _search(querystring, queryset_modifier_fn=None):
         'params': query_params,
         'raw_sql': raw_sql,
         }
+@rendered_with("search/middleware_error.html")
+def error(request, message):
+    return dict(message=message)
 
-def _search2(human_query, query_string, includes, params, raw_sql):
+def _search2(request, human_query, query_string, includes, params, raw_sql):
     querystring = query_string
     query_params = QueryDict(querystring)
     normalized = normalize_querystring(query_params)
@@ -750,12 +757,14 @@ def _search2(human_query, query_string, includes, params, raw_sql):
         ctx['query_string'] = querystring
         return ctx
 
+    report = sql.get_or_create_report(raw_sql, human_query, querystring)
     try:
-        results = sql.report_or_query(raw_sql, human_query, qs)
+        results = rest.poll_report(report.akid)
     except rest.ReportIncomplete, e:
-        return HttpResponse("A report is currently in progress.  Please be patient.")
+        return error(request, "A report is currently in progress.  Please be patient.")
     except rest.ReportFailed, e:
-        return HttpResponse(e)
+        return error(e)
+    
 
     results = imap(lambda result: sql.result_to_model(result, SearchResult), 
                    results)
