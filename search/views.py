@@ -464,9 +464,18 @@ def search(request):
         resp = redirect("search_count")
         resp['Location'] += "%s" % qsify(request.GET)
         return resp
-    ctx = _search(request)
+
+    try:
+        ctx = _search(request.META['QUERY_STRING'])
+    except NonNormalQuerystring, e:
+        location = request.path + "?" + e.normalized
+        return redirect(location)
+
     if not isinstance(ctx, dict):
         return ctx
+
+    request.session['akcrm.query'] = ctx['query_string']
+    ctx['request'] = request
 
     ctx['ACTIONKIT_URL'] = settings.ACTIONKIT_URL
     users = ctx.pop('users')
@@ -550,26 +559,31 @@ def search_just_akids(request):
     return HttpResponse(akids, content_type="text/plain")
 
 
-def _search(request, 
-            queryset_modifier_fn=None, return_sql_instead_of_running_it=False):
+class NonNormalQuerystring(Exception):
+    def __init__(self, normalized):
+        self.normalized = normalized
 
-    qs = normalize_querystring(request.GET)
+def _search(querystring,
+            queryset_modifier_fn=None, 
+            return_sql_instead_of_running_it=False):
 
-    if qs != request.META['QUERY_STRING']:
-        location = request.path + "?" + qs
-        return redirect(location)
+    query_params = QueryDict(querystring)
+    normalized = normalize_querystring(query_params)
+
+    if normalized != querystring:
+        raise NonNormalQuerystring(normalized)
+    querystring = normalized
 
     base_user_query = CoreUser.objects.using("ak").order_by("id")
-    #base_user_query = CoreUser.objects.order_by("id")
     
     includes = []
 
     include_pattern = re.compile("^include:\d+$")
-    for key in request.GET.keys():
+    for key in query_params.keys():
         if (include_pattern.match(key)
-            and request.GET[key]
-            and (not request.GET[key].endswith('_istoggle'))):
-            includes.append((key, request.GET.getlist(key)))
+            and query_params[key]
+            and (not query_params[key].endswith('_istoggle'))):
+            includes.append((key, query_params.getlist(key)))
 
     human_query = []
 
@@ -590,7 +604,7 @@ def _search(request,
             if item == 'more_actions__since':
                 continue
 
-            possible_values = request.GET.getlist(
+            possible_values = query_params.getlist(
                 "%s_%s" % (include_group[0], item))
             if len(possible_values) == 0:
                 continue
@@ -598,7 +612,7 @@ def _search(request,
             extra_data = {}
 
             istogglename = '%s_%s_istoggle' % (include_group[0], item)
-            istoggle = request.GET.get(istogglename, '1')
+            istoggle = query_params.get(istogglename, '1')
             try:
                 istoggle = bool(int(istoggle))
             except ValueError:
@@ -609,7 +623,7 @@ def _search(request,
             # these two fields are together, if we have another case like this
             # we should probably formalize this
             if item == "zipcode":
-                distance = request.GET.get('%s_zipcode__distance' % include_group[0])
+                distance = query_params.get('%s_zipcode__distance' % include_group[0])
                 if distance:
                     extra_data['distance'] = distance
 
@@ -617,34 +631,37 @@ def _search(request,
             # these two fields are together, if we have another case like this
             # we should probably formalize this
             if item == "contacted_since":
-                contacted_by = request.GET.get('%s_contacted_since__contacted_by' % include_group[0])
+                contacted_by = query_params.get(
+                    '%s_contacted_since__contacted_by' % include_group[0])
                 if contacted_by:
                     extra_data['contacted_by'] = contacted_by
 
             if item == "contacted_by":
-                contacted_since = request.GET.get('%s_contacted_by__contacted_since' % include_group[0])
+                contacted_since = query_params.get(
+                    '%s_contacted_by__contacted_since' % include_group[0])
                 if contacted_since:
                     extra_data['contacted_since'] = contacted_since
 
             if item == "emails_opened":
-                since = request.GET.get('%s_emails_opened__since' % include_group[0])
+                since = query_params.get('%s_emails_opened__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
             if item == "more_actions":
-                since = request.GET.get('%s_more_actions__since' % include_group[0])
+                since = query_params.get('%s_more_actions__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
             if item == "donated_more":
-                since = request.GET.get('%s_donated_more__since' % include_group[0])
+                since = query_params.get('%s_donated_more__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
             if item == "donated_times":
-                since = request.GET.get('%s_donated_times__since' % include_group[0])
+                since = query_params.get('%s_donated_times__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
 
             make_query_fn = query_data.get('query_fn', make_default_user_query)
-            users, __human_query = make_query_fn(users, query_data, possible_values, item, extra_data)
+            users, __human_query = make_query_fn(
+                users, query_data, possible_values, item, extra_data)
             _human_query.append(__human_query)
 
         if not _human_query or (
@@ -665,22 +682,21 @@ def _search(request,
     if users is None:
         users = base_user_query
 
-    ctx = dict(includes=includes,
-               params=request.GET)
+    ctx = dict(includes=includes, params=query_params)
 
     ### If both of user_name and user_email are filled out,
     ### search for anyone who matches EITHER condition, rather than both.
     extra_where = []
     extra_params = []
-    if request.GET.get("user_name"):
+    if query_params.get("user_name"):
         extra_where.append(
             "CONCAT(`core_user`.`first_name`, ' ', `core_user`.`last_name`) LIKE %s")
-        extra_params.append("%" + "%".join(request.GET['user_name'].split()) + "%")
-        human_query += "\n and name is like \"%s\"" % request.GET['user_name']
-    if request.GET.get("user_email"):
+        extra_params.append("%" + "%".join(query_params['user_name'].split()) + "%")
+        human_query += "\n and name is like \"%s\"" % query_params['user_name']
+    if query_params.get("user_email"):
         extra_where.append("`core_user`.`email` LIKE %s")
-        extra_params.append("%" + request.GET.get("user_email") + "%")
-        human_query += "\n and email is like \"%s\"" % request.GET['user_email']
+        extra_params.append("%" + query_params.get("user_email") + "%")
+        human_query += "\n and email is like \"%s\"" % query_params['user_email']
     if len(extra_where):
         if len(extra_where) == 2:
             extra_where = ["(%s OR %s)" % tuple(extra_where)]
@@ -714,15 +730,13 @@ def _search(request,
     if return_sql_instead_of_running_it:
         return raw_sql
 
-    qs = normalize_querystring(request.GET)
-    SearchResult = sql.create_model(qs)
+    SearchResult = sql.create_model(querystring)
 
     models = SearchResult.objects.using("dummy").all()
     if models.exists():
         ctx['human_query'] = human_query
         ctx['users'] = models
-        ctx['request'] = request
-        ctx['query_string'] = request.session['akcrm.query'] = qs
+        ctx['query_string'] = querystring
         return ctx
 
     try:
@@ -742,7 +756,7 @@ def _search(request,
             (obj for obj in chunk if obj is not None))
 
     resp = redirect(".")
-    resp['Location'] += ("?%s" % request.GET.urlencode())
+    resp['Location'] += ("?%s" % querystring)
     return resp
 
 @allow_http("GET")
