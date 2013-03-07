@@ -83,6 +83,14 @@ def run_report(name):
     location = resp.headers['Location']
     return location.strip("/").split("/")[-1]
 
+class ReportIncomplete(Exception):
+    def __init__(self, data):
+        self.data = data
+
+class ReportFailed(Exception):
+    def __init__(self, data):
+        self.data = data
+
 def poll_report(akid):
     host = settings.ACTIONKIT_API_HOST
     if not host.startswith("https"):
@@ -96,8 +104,11 @@ def poll_report(akid):
     assert resp.status_code == 200
     results = json.loads(resp.content)
 
-    if not results['completed'] or results['details']['status'] != "complete":
-        return {}
+    if not results['completed']:
+        raise ReportIncomplete(results)
+    if results['details']['status'] != "complete":
+        raise ReportFailed(results)
+
     download = results['details']['download_uri']
     url = "%s%s" % (host, download)
     resp = requests.get(url, auth=HTTPBasicAuth(

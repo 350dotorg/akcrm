@@ -101,6 +101,8 @@ class ActiveReport(models.Model):
     akid = models.IntegerField(unique=True)
     slug = models.SlugField(max_length=64, unique=True)
 
+    status = models.CharField(max_length=20, null=True, blank=True)
+
     @classmethod
     def slugify(cls, sql):
         hash = hashlib.sha1(sql).hexdigest()

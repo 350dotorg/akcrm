@@ -725,7 +725,13 @@ def _search(request,
         ctx['query_string'] = request.session['akcrm.query'] = qs
         return ctx
 
-    results = sql.report_or_query(raw_sql, human_query, qs)
+    try:
+        results = sql.report_or_query(raw_sql, human_query, qs)
+    except rest.ReportIncomplete, e:
+        return HttpResponse("A report is currently in progress.  Please be patient.")
+    except rest.ReportFailed, e:
+        return HttpResponse(e)
+
     results = imap(lambda result: sql.result_to_model(result, SearchResult), 
                    results)
     results = (result for result in results if result is not None)
