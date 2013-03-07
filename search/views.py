@@ -467,12 +467,9 @@ def search(request):
 
     try:
         ctx = _search(request.META['QUERY_STRING'])
+        ctx = _search2(**ctx)
     except NonNormalQuerystring, e:
-        location = request.path + "?" + e.normalized
-        return redirect(location)
-
-    if not isinstance(ctx, dict):
-        return ctx
+        return e.redirect(request)
 
     request.session['akcrm.query'] = ctx['query_string']
     ctx['request'] = request
@@ -540,20 +537,23 @@ def search_raw_sql(request):
     since that is what is most commonly needed in Actionkit administrative
     contexts like mail targeting.
     """
-    query = _search(request,
-                    queryset_modifier_fn=lambda x: x.values_list("id"),
-                    return_sql_instead_of_running_it=True)
-
-    ctx = dict(
-        query=query
-        )
-
-    return HttpResponse(query, content_type="text/plain")
+    try:
+        ctx = _search(request.META['QUERY_STRING'],
+                      queryset_modifier_fn=lambda x: x.values_list("id"))
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+    return HttpResponse(ctx['raw_sql'], content_type="text/plain")
 
 @allow_http("GET")
 def search_just_akids(request):
-    users = _search(request)['users']
+    try:
+        ctx = _search(request.META['QUERY_STRING'],
+                      queryset_modifier_fn=lambda x: x.values_list("id"))
+        ctx = _search2(**ctx)
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
 
+    users = ctx['users']
     akids = set(list(user['id'] for user in users))
     akids = ", ".join(str(i) for i in akids)
     return HttpResponse(akids, content_type="text/plain")
@@ -563,13 +563,12 @@ class NonNormalQuerystring(Exception):
     def __init__(self, normalized):
         self.normalized = normalized
 
-def _search(querystring,
-            queryset_modifier_fn=None, 
-            return_sql_instead_of_running_it=False):
+    def redirect(self, request):
+        return redirect(request.path + "?" + self.normalized)
 
+def _search(querystring, queryset_modifier_fn=None):
     query_params = QueryDict(querystring)
     normalized = normalize_querystring(query_params)
-
     if normalized != querystring:
         raise NonNormalQuerystring(normalized)
     querystring = normalized
@@ -720,13 +719,25 @@ def _search(querystring,
         users = queryset_modifier_fn(users)
 
     users = users.distinct()
-
     raw_sql = sql.raw_sql_from_queryset(users)
 
     del users
 
-    if return_sql_instead_of_running_it:
-        return raw_sql
+    return {
+        'human_query': human_query,
+        'query_string': querystring,
+        'includes': includes,
+        'params': query_params,
+        'raw_sql': raw_sql,
+        }
+
+def _search2(human_query, query_string, includes, params, raw_sql):
+    querystring = query_string
+    query_params = QueryDict(querystring)
+    normalized = normalize_querystring(query_params)
+    if normalized != querystring:
+        raise NonNormalQuerystring(normalized)
+    querystring = normalized
 
     SearchResult = sql.create_model(querystring)
 
