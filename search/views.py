@@ -682,8 +682,6 @@ def _search(querystring,
     if users is None:
         users = base_user_query
 
-    ctx = dict(includes=includes, params=query_params)
-
     ### If both of user_name and user_email are filled out,
     ### search for anyone who matches EITHER condition, rather than both.
     extra_where = []
@@ -731,6 +729,8 @@ def _search(querystring,
         return raw_sql
 
     SearchResult = sql.create_model(querystring)
+
+    ctx = dict(includes=includes, params=query_params)
 
     models = SearchResult.objects.using("dummy").all()
     if models.exists():
