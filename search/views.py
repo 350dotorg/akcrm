@@ -722,10 +722,10 @@ def _search(request,
         ctx['human_query'] = human_query
         ctx['users'] = models
         ctx['request'] = request
-        ctx['query_string'] = request.session['akcrm.query'] = request.GET.urlencode()
+        ctx['query_string'] = request.session['akcrm.query'] = qs
         return ctx
 
-    results = sql.report_or_query(raw_sql, human_query, request.GET.urlencode())
+    results = sql.report_or_query(raw_sql, human_query, qs)
     results = imap(lambda result: sql.result_to_model(result, SearchResult), 
                    results)
     results = (result for result in results if result is not None)
