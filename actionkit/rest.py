@@ -101,9 +101,14 @@ def poll_report(akid):
     download = results['details']['download_uri']
     url = "%s%s" % (host, download)
     resp = requests.get(url, auth=HTTPBasicAuth(
-            settings.ACTIONKIT_API_USER, settings.ACTIONKIT_API_PASSWORD))
-    # @@TODO
-    data = csv.reader(resp.text.encode("ascii", "ignore").splitlines())
+            settings.ACTIONKIT_API_USER, settings.ACTIONKIT_API_PASSWORD),
+                        prefetch=False)
+    resp.encoding = "utf-8"
+
+    lines = (line for line in resp.iter_lines(chunk_size=10))
+    data = csv.reader(lines)
+    # @@TODO we'll need the header row
+
     data.next()  # discard header row
     return data
 

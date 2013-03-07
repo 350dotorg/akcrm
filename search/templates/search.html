@@ -5,14 +5,16 @@
   {% block head %}
   <script type="text/javascript">
     $(window).load(function() {
-      $("#num_results").text($("tr.gradeA").length);
       $("table#ngot_data").dataTable({
         "bJQueryUI": true,
         "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
           nRow.class = "gradeA";
           return nRow;
         },
-        "sPaginationType": "full_numbers"
+        "sPaginationType": "full_numbers",
+        "bServerSide": true,
+        "aoColumnDefs": [{ "bSearchable": false, "aTargets": [8]}],
+        "sAjaxSource": "{% url search_datatables query_string %}"
       });
     });
 /*
@@ -205,7 +207,7 @@
   </div>
 
   <br />
-<h1>Found: <span id="num_results">{{ users|length }}</span> people</h1>
+<h1>Found: <span id="num_results">{{ num_users }}</span> people</h1>
 <div class="results-header">
   Searched for people who match::
   <pre>{{ human_query }}</pre>

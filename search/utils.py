@@ -2,6 +2,25 @@ import urllib2
 from math import cos
 from math import radians
 from json import loads
+from itertools import izip_longest
+from urllib import quote
+
+def normalize_querystring(qd):
+    querystring = qd.copy()
+    for key in qd:
+        if not qd[key]:
+            del querystring[key]
+    qs = []
+    for key, vals in querystring.iterlists():
+        for val in vals:
+            qs.append((quote(key), quote(val)))
+    qs = sorted(qs)
+    qs = "&".join(["=".join(i) for i in qs])
+    return qs
+
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return izip_longest(*args, fillvalue=fillvalue)
 
 def clamp(n, low, high):
     """ensure that a number n is constrained in a range"""

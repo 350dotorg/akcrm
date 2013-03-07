@@ -16,6 +16,7 @@ def raw_sql_from_queryset(queryset):
 query_keys = [
     'phone',
     'campus',
+    'name',
     'id',
     'created_at',
     'updated_at',
@@ -41,8 +42,12 @@ query_keys = [
     'rand_id',
     ]
 
-def result_to_model(result_spec):
-    return dict(zip(query_keys, result_spec))
+def result_to_model(result_spec, model_class):
+    if not result_spec:
+        return None
+    spec = dict(zip(query_keys, [
+                cell if cell != "None" else None for cell in result_spec]))
+    return model_class(**spec)
 
 def report_or_query(raw_sql, human_query, query_string):
     try:
@@ -51,3 +56,20 @@ def report_or_query(raw_sql, human_query, query_string):
         return rest.query(raw_sql, human_query, query_string)
     else:
         return rest.poll_report(report.akid)
+
+from search.models import make_temporary_model
+from django.core.management.color import no_style
+def create_model(query_string):
+    slug = ActiveReport.slugify(query_string)
+
+    ModelClass = make_temporary_model(slug)
+
+    sqls, __ = connections['dummy'].creation.sql_create_model(ModelClass, no_style())
+
+    cursor = connections['dummy'].cursor()
+    for sql in sqls:
+        try:
+            cursor.execute(sql)
+        except Exception:
+            pass
+    return ModelClass

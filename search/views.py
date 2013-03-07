@@ -15,7 +15,7 @@ from django.db.models import Sum
 from djangohelpers import rendered_with, allow_http
 from djangohelpers.templatetags.helpful_tags import qsify
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, QueryDict
 from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
@@ -28,6 +28,7 @@ import re
 import urllib2
 from operator import attrgetter
 from operator import itemgetter
+from itertools import imap
 
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
@@ -38,8 +39,10 @@ from akcrm.permissions import authorize
 from akcrm.search import sql
 from akcrm.search.models import AgentTag
 from akcrm.search.utils import clamp
+from akcrm.search.utils import grouper
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
+from akcrm.search.utils import normalize_querystring
 
 def make_default_user_query(users, query_data, values, search_on, extra_data={}):
     """
@@ -462,8 +465,13 @@ def search(request):
         resp['Location'] += "%s" % qsify(request.GET)
         return resp
     ctx = _search(request)
+    if not isinstance(ctx, dict):
+        return ctx
+
     ctx['ACTIONKIT_URL'] = settings.ACTIONKIT_URL
-    users = ctx['users']
+    users = ctx.pop('users')
+    num_users = users.count()
+    ctx['num_users'] = num_users
 
     if getattr(request.PERMISSIONS, 'add_contact_record'):
         contact_form = ContactForm(initial={
@@ -478,9 +486,22 @@ def search(request):
 def search_count(request):
     ctx = _search(request)
     users = ctx.pop('users')
-    num_users = len(users)
+    num_users = users.count()
     ctx['num_users'] = num_users
     return ctx
+
+@allow_http("GET")
+def search_datatables(request, query_string):
+    query_string = normalize_querystring(QueryDict(query_string))
+    SearchResult = sql.create_model(query_string)
+
+    models = SearchResult.objects.using("dummy").all()
+    from search.datatables import datatablize
+    return datatablize(request, models, dict(enumerate([
+                    "name", "email", "id",
+                    "phone", "country", "state", "city", "campus",
+                    "created_at",
+                    ])), jsonTemplatePath="response.json")
 
 @allow_http("GET")
 def search_json(request):
@@ -529,7 +550,15 @@ def search_just_akids(request):
     return HttpResponse(akids, content_type="text/plain")
 
 
-def _search(request, queryset_modifier_fn=None, return_sql_instead_of_running_it=False):
+def _search(request, 
+            queryset_modifier_fn=None, return_sql_instead_of_running_it=False):
+
+    qs = normalize_querystring(request.GET)
+
+    if qs != request.META['QUERY_STRING']:
+        location = request.path + "?" + qs
+        return redirect(location)
+
     base_user_query = CoreUser.objects.using("ak").order_by("id")
     #base_user_query = CoreUser.objects.order_by("id")
     
@@ -667,6 +696,8 @@ def _search(request, queryset_modifier_fn=None, return_sql_instead_of_running_it
                 "SELECT `value` from `core_userfield` "
                 "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
                 'AND `core_userfield`.`name`="campus" LIMIT 1'),
+                                'name': (
+                "CONCAT(first_name, last_name)"),
                                 })
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
@@ -683,15 +714,30 @@ def _search(request, queryset_modifier_fn=None, return_sql_instead_of_running_it
     if return_sql_instead_of_running_it:
         return raw_sql
 
+    qs = normalize_querystring(request.GET)
+    SearchResult = sql.create_model(qs)
+
+    models = SearchResult.objects.using("dummy").all()
+    if models.exists():
+        ctx['human_query'] = human_query
+        ctx['users'] = models
+        ctx['request'] = request
+        ctx['query_string'] = request.session['akcrm.query'] = request.GET.urlencode()
+        return ctx
+
     results = sql.report_or_query(raw_sql, human_query, request.GET.urlencode())
-    models = map(sql.result_to_model, results)
+    results = imap(lambda result: sql.result_to_model(result, SearchResult), 
+                   results)
+    results = (result for result in results if result is not None)
+    chunked_models = grouper(results, 1000)
 
-    ctx['human_query'] = human_query
-    ctx['users'] = models
-    ctx['request'] = request
-    request.session['akcrm.query'] = request.GET.urlencode()
+    for chunk in chunked_models:
+        SearchResult.objects.using("dummy").bulk_create(
+            (obj for obj in chunk if obj is not None))
 
-    return ctx
+    resp = redirect(".")
+    resp['Location'] += ("?%s" % request.GET.urlencode())
+    return resp
 
 @allow_http("GET")
 @rendered_with("detail.html")
