@@ -758,23 +758,7 @@ def _search2(request, human_query, query_string, includes, params, raw_sql):
         return ctx
 
     report = sql.get_or_create_report(raw_sql, human_query, querystring)
-    try:
-        results = rest.poll_report(report.akid)
-    except rest.ReportIncomplete, e:
-        return error(request, "A report is currently in progress.  Please be patient.")
-    except rest.ReportFailed, e:
-        return error(e)
-    
-
-    results = imap(lambda result: sql.result_to_model(result, SearchResult), 
-                   results)
-    results = (result for result in results if result is not None)
-    chunked_models = grouper(results, 1000)
-
-    for chunk in chunked_models:
-        SearchResult.objects.using("dummy").bulk_create(
-            (obj for obj in chunk if obj is not None))
-
+    return error(request, "%s %s" % (report.status, report.message))
     resp = redirect(".")
     resp['Location'] += ("?%s" % querystring)
     return resp

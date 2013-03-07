@@ -102,6 +102,7 @@ class ActiveReport(models.Model):
     slug = models.SlugField(max_length=64, unique=True)
 
     status = models.CharField(max_length=20, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
 
     @classmethod
     def slugify(cls, sql):
