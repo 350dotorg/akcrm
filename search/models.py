@@ -48,7 +48,7 @@ def make_temporary_model(table_name):
         affiliation = models.CharField(max_length=255, null=True, blank=True)
 
         class Meta:
-            db_table = "search_result_" + table_name[:30]
+            db_table = table_name[:60]
             managed = True
 
         @models.permalink
@@ -110,6 +110,12 @@ class ActiveReport(models.Model):
     status = models.CharField(max_length=20, null=True, blank=True)
     message = models.TextField(null=True, blank=True)
 
+    local_table = models.CharField(max_length=100, null=True, blank=True)
+    
+    def results_model(self):
+        assert self.local_table is not None
+        return make_temporary_model(self.local_table)
+
     @classmethod
     def slugify(cls, sql):
         hash = hashlib.sha1(sql).hexdigest()
@@ -139,7 +145,7 @@ class ActiveReport(models.Model):
         
         from akcrm.search import sql
         try:
-            SearchResult = sql.create_model(self.query_string)
+            SearchResult = self.results_model()
 
             results = imap(
                 lambda result: sql.result_to_model(result, SearchResult, columns), 

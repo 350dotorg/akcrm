@@ -37,7 +37,7 @@ from akcrm.crm.models import ContactRecord
 from akcrm.cms.models import HomePageHtml
 from akcrm.permissions import authorize
 from akcrm.search import sql
-from akcrm.search.models import AgentTag
+from akcrm.search.models import AgentTag, ActiveReport
 from akcrm.search.utils import clamp
 from akcrm.search.utils import grouper
 from akcrm.search.utils import latlon_bbox
@@ -501,7 +501,9 @@ def search_count(request):
 @allow_http("GET")
 def search_datatables(request, query_string):
     query_string = normalize_querystring(QueryDict(query_string))
-    SearchResult = sql.create_model(query_string)
+
+    report = ActiveReport.objects.get(query_string=query_string)
+    SearchResult = report.results_model()
 
     models = SearchResult.objects.using("dummy").all()
     from search.datatables import datatablize
@@ -758,12 +760,12 @@ def _search2(request, human_query, query_string, includes, params, raw_sql):
         raise NonNormalQuerystring(normalized)
     querystring = normalized
 
-    SearchResult = sql.create_model(querystring)
-
     ctx = dict(includes=includes, params=query_params)
 
     report = sql.get_or_create_report(raw_sql, human_query, querystring)
-    if report.status == "finished":
+    SearchResult = report.results_model()
+
+    if report.status == "ready":
         models = SearchResult.objects.using("dummy").all()
         ctx['human_query'] = human_query
         ctx['users'] = models

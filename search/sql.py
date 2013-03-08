@@ -41,15 +41,17 @@ def get_or_create_report(raw_sql, human_query, query_string):
         ## and also a handle on the run-of-the-report (in the location header of the second API call)
         ## and I guess we'll need to store both of those handles somewhere
         report = ActiveReport(query_string=query_string, akid=handle, slug=slug)
+
+        SearchResult = create_model(report.slug)
+        report.local_table = SearchResult._meta.db_table
+
         report.save()
 
     return report
 
 from search.models import make_temporary_model
 from django.core.management.color import no_style
-def create_model(query_string):
-    slug = ActiveReport.slugify(query_string)
-
+def create_model(slug):
     ModelClass = make_temporary_model(slug)
 
     sqls, __ = connections['dummy'].creation.sql_create_model(ModelClass, no_style())
