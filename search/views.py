@@ -772,9 +772,18 @@ def _search2(request, human_query, query_string, includes, params, raw_sql):
         ctx['query_string'] = querystring
         return ctx
     elif report.status is None:
-        if settings.USE_CELERY:
+        method = settings.AKTIVATOR_REPORT_POLLING_METHOD
+        assert method in ("synchronous", "celery", "thread", "cron")
+        if method == "celery":
             from akcrm.search.tasks import poll_report
             poll_report.delay(report)
+        elif method == "thread":
+            import threading
+            threading.Thread(target=report.poll_results).start()
+        elif method == "synchronous":
+            report.poll_results()
+        elif method == "cron":
+            pass
 
     return error(request, "%s %s" % (report.status, report.message))
     resp = redirect(".")
