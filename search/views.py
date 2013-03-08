@@ -758,6 +758,10 @@ def _search2(request, human_query, query_string, includes, params, raw_sql):
         return ctx
 
     report = sql.get_or_create_report(raw_sql, human_query, querystring)
+    if settings.USE_CELERY:
+        from akcrm.search.tasks import poll_report
+        poll_report.delay(report)
+
     return error(request, "%s %s" % (report.status, report.message))
     resp = redirect(".")
     resp['Location'] += ("?%s" % querystring)

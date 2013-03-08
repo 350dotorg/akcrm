@@ -94,6 +94,9 @@ class UserSearchQuery(models.Model):
 
 from django.template.defaultfilters import slugify
 import hashlib
+from akcrm.actionkit import rest
+from itertools import imap
+from akcrm.search.utils import grouper
 
 class ActiveReport(models.Model):
     
@@ -109,3 +112,39 @@ class ActiveReport(models.Model):
         hash = hashlib.sha1(sql).hexdigest()
         slug = slugify(hash)
         return slug
+    
+    # @@TODO this should commit transactions during each save()
+    def poll_results(self):
+        if self.status == "ready":
+            return True
+        if self.status is not None:
+            return False
+        self.status = "polling"
+        try:
+            results = rest.poll_report(self.akid)
+        except rest.ReportFailed, e:
+            self.status = "failed"
+            self.message = str(e.data)
+            self.save()
+            return False
+        except rest.ReportIncomplete, e:
+            self.status = None
+            self.save()
+            return False
+        self.status = "loading"
+        self.save()
+        
+        from akcrm.search import sql
+        SearchResult = sql.create_model(self.query_string)
+
+        results = imap(lambda result: sql.result_to_model(result, SearchResult), 
+                       results)
+        results = (result for result in results if result is not None)
+        chunked_models = grouper(results, 1000)
+
+        for chunk in chunked_models:
+            SearchResult.objects.using("dummy").bulk_create(
+                (obj for obj in chunk if obj is not None))
+        self.status = "ready" 
+        self.save()
+        return True

@@ -151,6 +151,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
     )
 
+USE_CELERY = False
+
 try:
     from local_settings import *
 except ImportError:
