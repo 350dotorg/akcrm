@@ -762,17 +762,17 @@ def _search2(request, human_query, query_string, includes, params, raw_sql):
 
     ctx = dict(includes=includes, params=query_params)
 
-    models = SearchResult.objects.using("dummy").all()
-    if models.exists():
+    report = sql.get_or_create_report(raw_sql, human_query, querystring)
+    if report.status == "finished":
+        models = SearchResult.objects.using("dummy").all()
         ctx['human_query'] = human_query
         ctx['users'] = models
         ctx['query_string'] = querystring
         return ctx
-
-    report = sql.get_or_create_report(raw_sql, human_query, querystring)
-    if settings.USE_CELERY:
-        from akcrm.search.tasks import poll_report
-        poll_report.delay(report)
+    elif report.status is None:
+        if settings.USE_CELERY:
+            from akcrm.search.tasks import poll_report
+            poll_report.delay(report)
 
     return error(request, "%s %s" % (report.status, report.message))
     resp = redirect(".")
