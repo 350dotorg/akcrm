@@ -138,17 +138,24 @@ class ActiveReport(models.Model):
         self.save()
         
         from akcrm.search import sql
-        SearchResult = sql.create_model(self.query_string)
+        try:
+            SearchResult = sql.create_model(self.query_string)
 
-        results = imap(
-            lambda result: sql.result_to_model(result, SearchResult, columns), 
-            results)
-        results = (result for result in results if result is not None)
-        chunked_models = grouper(results, 1000)
+            results = imap(
+                lambda result: sql.result_to_model(result, SearchResult, columns), 
+                results)
+            results = (result for result in results if result is not None)
+            chunked_models = grouper(results, 1000)
 
-        for chunk in chunked_models:
-            SearchResult.objects.using("dummy").bulk_create(
-                (obj for obj in chunk if obj is not None))
+            for chunk in chunked_models:
+                SearchResult.objects.using("dummy").bulk_create(
+                    (obj for obj in chunk if obj is not None))
+        except Exception, e:
+            self.status = "exception"
+            self.message = str(e)
+            self.save()
+            raise e
+
         self.status = "ready" 
         self.save()
         return True
