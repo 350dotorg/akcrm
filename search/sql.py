@@ -1,4 +1,5 @@
 from actionkit import rest
+import datetime
 from django.db import connections
 from search.models import ActiveReport
 
@@ -24,7 +25,8 @@ def get_or_create_report(raw_sql, human_query, query_string):
     try:
         report = ActiveReport.objects.get(query_string=query_string)
     except ActiveReport.DoesNotExist:
-        slug = ActiveReport.slugify(query_string)
+        slug = ActiveReport.slugify(
+            raw_sql + datetime.datetime.now().utcnow().isoformat())
 
         ## Create a new report
         ## (https://roboticdogs.actionkit.com/docs/manual/api/rest/reports.html#creating-reports)
