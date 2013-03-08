@@ -1041,30 +1041,19 @@ def safe_encode(value):
     return str(value)
 
 
-def user_to_csv_row(user, fields, field_fns):
+def user_to_csv_row(user, fields):
     row = []
     for field in fields:
-        field_fn = field_fns.get(field, None)
-        if field_fn is not None:
-            value = field_fn(user)
-        else:
-            value = getattr(user, field, '') or ''
-            if callable(value):
-                value = value()
+        value = getattr(user, field, '') or ''
+        if callable(value):
+            value = value()
         value = safe_encode(value)
         row.append(value)
     return row
 
 
-def corefield_value(field_name):
-    def get_corefield(user):
-        values = [f.value for f in user.fields.all() if f.name == field_name]
-        return ','.join(values)
-    return get_corefield
-
-
 @authorize("search_export")
-@allow_http("GET")
+@allow_http("GET", "POST")
 @rendered_with("search_csv.html")
 def search_csv(request):
     user_fields = ['first_name', 'last_name', 'email',
@@ -1072,25 +1061,31 @@ def search_csv(request):
                    'postal', 'zip', 'country',
                    'source', 'subscription_status', 'phone', 'campus',
                    'skills', 'engagement_level', 'affiliation']
-    field_fns = dict(skills=corefield_value('skills'),
-                     engagement_level=corefield_value('engagement_level'),
-                     affiliation=corefield_value('affiliation'))
-    fields = request.GET.getlist('fields')
-    if not fields:
+    fields = request.POST.getlist('fields')
+    if request.method == "GET" or not fields:
         keyvals = []
-        for key in request.GET.keys():
-            for value in request.GET.getlist(key):
+        for key in request.POST.keys():
+            for value in request.POST.getlist(key):
                 keyvals.append((key, value))
         return dict(fields=user_fields,
                     keyvals=keyvals,
-                    request=request)
+                    request=request,
+                    query_string=request.META['QUERY_STRING'])
 
     buffer = StringIO()
     writer = csv.writer(buffer)
     writer.writerow(fields)
-    users = _search(request)['users']
+    try:
+        ctx = _search(request.META['QUERY_STRING'])
+        ctx = _search2(request, **ctx)
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+    if not isinstance(ctx, dict):
+        return ctx
+    
+    users = ctx['users']
     for user in users:
-        row = user_to_csv_row(user, fields, field_fns)
+        row = user_to_csv_row(user, fields)
         writer.writerow(row)
     response = HttpResponse(buffer.getvalue())
     response['Content-Type'] = 'text/csv'
