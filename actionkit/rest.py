@@ -58,7 +58,8 @@ def create_report(sql, description, name, short_name):
     if not host.startswith("https"):
         host = "https://" + host
 
-    data = json.dumps(dict(sql=sql, description=description, name=name, short_name=short_name))
+    data = json.dumps(dict(sql=sql, description=description, name=name, short_name=short_name,
+                           hidden=True))
 
     url = "%s/rest/v1/queryreport/" % host
     resp = requests.post(url, auth=HTTPBasicAuth(
