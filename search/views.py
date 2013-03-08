@@ -714,7 +714,19 @@ def _search(querystring, queryset_modifier_fn=None):
                 "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
                 'AND `core_userfield`.`name`="campus" LIMIT 1'),
                                 'name': (
-                "CONCAT(first_name, last_name)"),
+                "CONCAT(CONCAT(first_name, \" \"), last_name)"),
+                                'skills': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="skills" LIMIT 1'),
+                                'engagement_level': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="engagement_level" LIMIT 1'),
+                                'affiliation': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="affiliation" LIMIT 1'),
                                 })
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
@@ -814,14 +826,26 @@ def detail_json(request, user_id):
 def _detail(request, user_id):
     try:
         agent = CoreUser.objects.using("ak").extra(select={'phone': (
-                "SELECT `phone` FROM `core_phone` "
-                "WHERE `core_phone`.`user_id`=`core_user`.`id` "
-                "LIMIT 1"),
-                                'campus': (
-                "SELECT `value` from `core_userfield` "
-                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
-                'AND `core_userfield`.`name`="campus" LIMIT 1'),
-                                }).get(id=user_id)
+                    "SELECT `phone` FROM `core_phone` "
+                    "WHERE `core_phone`.`user_id`=`core_user`.`id` "
+                    "LIMIT 1"),
+                                                           'campus': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="campus" LIMIT 1'),
+                                                           'skills': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="skills" LIMIT 1'),
+                                                           'engagement_level': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="engagement_level" LIMIT 1'),
+                                                           'affiliation': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="affiliation" LIMIT 1'),
+                                                           }).get(id=user_id)
     except CoreUser.DoesNotExist:
         return HttpResponseNotFound("No such record exists")
 

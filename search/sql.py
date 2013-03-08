@@ -13,39 +13,10 @@ def raw_sql_from_queryset(queryset):
     else:
         assert False, "Dummy query was expected to fail"
 
-query_keys = [
-    'phone',
-    'campus',
-    'name',
-    'id',
-    'created_at',
-    'updated_at',
-    'email',
-    'prefix',
-    'first_name',
-    'middle_name',
-    'last_name',
-    'suffix',
-    'password',
-    'subscription_status',
-    'address1',
-    'address2',
-    'city',
-    'state',
-    'region',
-    'postal',
-    'zip',
-    'plus4',
-    'country',
-    'source',
-    'lang_id',
-    'rand_id',
-    ]
-
-def result_to_model(result_spec, model_class):
+def result_to_model(result_spec, model_class, columns):
     if not result_spec:
         return None
-    spec = dict(zip(query_keys, [
+    spec = dict(zip(columns, [
                 cell if cell != "None" else None for cell in result_spec]))
     return model_class(**spec)
 

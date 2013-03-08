@@ -43,6 +43,9 @@ def make_temporary_model(table_name):
 
         phone = models.CharField(max_length=255, null=True, blank=True)
         campus = models.CharField(max_length=255, null=True, blank=True)
+        skills = models.CharField(max_length=255, null=True, blank=True)
+        engagement_level = models.CharField(max_length=255, null=True, blank=True)
+        affiliation = models.CharField(max_length=255, null=True, blank=True)
 
         class Meta:
             db_table = "search_result_" + table_name[:30]
@@ -121,7 +124,7 @@ class ActiveReport(models.Model):
             return False
         self.status = "polling"
         try:
-            results = rest.poll_report(self.akid)
+            columns, results = rest.poll_report(self.akid)
         except rest.ReportFailed, e:
             self.status = "failed"
             self.message = str(e.data)
@@ -137,8 +140,9 @@ class ActiveReport(models.Model):
         from akcrm.search import sql
         SearchResult = sql.create_model(self.query_string)
 
-        results = imap(lambda result: sql.result_to_model(result, SearchResult), 
-                       results)
+        results = imap(
+            lambda result: sql.result_to_model(result, SearchResult, columns), 
+            results)
         results = (result for result in results if result is not None)
         chunked_models = grouper(results, 1000)
 

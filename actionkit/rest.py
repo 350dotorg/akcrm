@@ -118,9 +118,8 @@ def poll_report(akid):
 
     lines = (line for line in resp.iter_lines(chunk_size=10))
     data = csv.reader(lines)
-    # @@TODO we'll need the header row
 
-    data.next()  # discard header row
-    return data
+    columns = data.next()
+    return columns, data
 
 
