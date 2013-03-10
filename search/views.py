@@ -466,20 +466,18 @@ def search(request):
         return resp
 
     try:
-        ctx = _search(request.META['QUERY_STRING'])
-        ctx = _search2(request, **ctx)
+        query = build_query(request.META['QUERY_STRING'])
+        report = _search2(request, query)
     except NonNormalQuerystring, e:
         return e.redirect(request)
-    if not isinstance(ctx, dict):
-        return ctx
 
-    request.session['akcrm.query'] = ctx['query_string']
+    ctx = dict(human_query=query.human_query, report=report, 
+               query_string=query.query_string)
+
+    request.session['akcrm.query'] = query.query_string
     ctx['request'] = request
-
+    
     ctx['ACTIONKIT_URL'] = settings.ACTIONKIT_URL
-    users = ctx.pop('users')
-    num_users = users.count()
-    ctx['num_users'] = num_users
 
     if getattr(request.PERMISSIONS, 'add_contact_record'):
         contact_form = ContactForm(initial={
@@ -487,16 +485,26 @@ def search(request):
                 })
         ctx['contact_form'] = contact_form
 
+    if request.is_ajax():
+        return HttpResponse(json.dumps(dict(status=report.status)), 
+                            content_type="application/json")
     return ctx
 
 @allow_http("GET")
 @rendered_with("search_count.html")
 def search_count(request):
-    ctx = _search(request)
-    users = ctx.pop('users')
-    num_users = users.count()
-    ctx['num_users'] = num_users
-    return ctx
+    try:
+        query = build_query(request.META['QUERY_STRING'],
+                             queryset_modifier_fn=lambda x: x.values_list("id"))
+        report = _search2(request, query)
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+
+    if report.status != "ready":
+        return HttpResponse("not ready")
+
+    num_users = report.results_model().objects.using("dummy").all().count()
+    return HttpResponse(num_users, content_type="text/plain")
 
 @allow_http("GET")
 def search_datatables(request, query_string):
@@ -513,28 +521,6 @@ def search_datatables(request, query_string):
                     "created_at",
                     ])), jsonTemplatePath="response.json")
 
-@allow_http("GET")
-def search_json(request):
-    ctx = _search(request)
-    users = ctx['users']
-    
-    users_json = []
-    for user in users:
-        users_json.append(dict(
-                id=user.id,
-                url=user.get_absolute_url(),
-                name=unicode(user),
-                email=user.email,
-                phone=unicode(user.phone or ''),
-                country=user.country,
-                state=user.state,
-                city=user.city,
-                campus=user.campus(),
-                created_at=user.created_at.strftime("%m/%d/%Y"),
-                ))
-    users_json = json.dumps(users_json)
-    return HttpResponse(users_json, content_type="application/json")
-
 def search_raw_sql(request):
     """
     Returns the raw SQL for this search, modified to only return core_user.id 
@@ -542,25 +528,25 @@ def search_raw_sql(request):
     contexts like mail targeting.
     """
     try:
-        ctx = _search(request.META['QUERY_STRING'],
-                      queryset_modifier_fn=lambda x: x.values_list("id"))
+        query = build_query(request.META['QUERY_STRING'],
+                            queryset_modifier_fn=lambda x: x.values_list("id"))
     except NonNormalQuerystring, e:
         return e.redirect(request)
-    return HttpResponse(ctx['raw_sql'], content_type="text/plain")
+    return HttpResponse(query.raw_sql, content_type="text/plain")
 
 @allow_http("GET")
 def search_just_akids(request):
     try:
-        ctx = _search(request.META['QUERY_STRING'],
-                      queryset_modifier_fn=lambda x: x.values_list("id"))
-        ctx = _search2(request, **ctx)
+        query = build_query(request.META['QUERY_STRING'],
+                             queryset_modifier_fn=lambda x: x.values_list("id"))
+        report = _search2(request, query)
     except NonNormalQuerystring, e:
         return e.redirect(request)
-    if not isinstance(ctx, dict):
-        return ctx
 
-    users = ctx['users']
-    akids = set(list(user.id for user in users))
+    if report.status != "ready":
+        return HttpResponse("not ready")
+
+    akids = report.results_model().objects.using("dummy").values_list("id", flat=True).distinct()
     akids = ", ".join(str(i) for i in akids)
     return HttpResponse(akids, content_type="text/plain")
 
@@ -572,7 +558,10 @@ class NonNormalQuerystring(Exception):
     def redirect(self, request):
         return redirect(request.path + "?" + self.normalized)
 
-def _search(querystring, queryset_modifier_fn=None):
+from collections import namedtuple
+Query = namedtuple("Query", "human_query query_string includes params raw_sql")
+
+def build_query(querystring, queryset_modifier_fn=None):
     query_params = QueryDict(querystring)
     normalized = normalize_querystring(query_params)
     if normalized != querystring:
@@ -741,37 +730,22 @@ def _search(querystring, queryset_modifier_fn=None):
 
     del users
 
-    return {
-        'human_query': human_query,
-        'query_string': querystring,
-        'includes': includes,
-        'params': query_params,
-        'raw_sql': raw_sql,
-        }
-@rendered_with("search/middleware_error.html")
+    return Query(human_query, querystring, includes, query_params, raw_sql)
+
 def error(request, message):
     return dict(message=message)
 
-def _search2(request, human_query, query_string, includes, params, raw_sql):
-    querystring = query_string
+def _search2(request, query):
+    querystring = query.query_string
     query_params = QueryDict(querystring)
     normalized = normalize_querystring(query_params)
     if normalized != querystring:
         raise NonNormalQuerystring(normalized)
     querystring = normalized
 
-    ctx = dict(includes=includes, params=query_params)
+    report = sql.get_or_create_report(query.raw_sql, query.human_query, querystring)
 
-    report = sql.get_or_create_report(raw_sql, human_query, querystring)
-    SearchResult = report.results_model()
-
-    if report.status == "ready":
-        models = SearchResult.objects.using("dummy").all()
-        ctx['human_query'] = human_query
-        ctx['users'] = models
-        ctx['query_string'] = querystring
-        return ctx
-    elif report.status is None:
+    if report.status is None:
         method = settings.AKTIVATOR_REPORT_POLLING_METHOD
         assert method in ("synchronous", "celery", "thread", "cron")
         if method == "celery":
@@ -785,10 +759,7 @@ def _search2(request, human_query, query_string, includes, params, raw_sql):
         elif method == "cron":
             pass
 
-    return error(request, "%s %s" % (report.status, report.message))
-    resp = redirect(".")
-    resp['Location'] += ("?%s" % querystring)
-    return resp
+    return report
 
 @allow_http("GET")
 @rendered_with("detail.html")
@@ -1111,14 +1082,15 @@ def search_csv(request):
     writer = csv.writer(buffer)
     writer.writerow(fields)
     try:
-        ctx = _search(request.META['QUERY_STRING'])
-        ctx = _search2(request, **ctx)
+        query = build_query(request.META['QUERY_STRING'])
+        report = _search2(request, query)
     except NonNormalQuerystring, e:
         return e.redirect(request)
-    if not isinstance(ctx, dict):
-        return ctx
-    
-    users = ctx['users']
+
+    if report.status != "ready":
+        return HttpResponse("not ready")
+
+    users = report.results_model().objects.using("dummy").all()
     for user in users:
         row = user_to_csv_row(user, fields)
         writer.writerow(row)

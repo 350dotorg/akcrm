@@ -4,8 +4,9 @@
 <head>
   {% block head %}
   <script type="text/javascript">
-    $(window).load(function() {
-      $("table#ngot_data").dataTable({
+    var search_url = window.location.toString();
+    window.activateDataTable = function() {
+      $("table#ngot_data").show().dataTable({
         "bJQueryUI": true,
         "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
           nRow.class = "gradeA";
@@ -16,22 +17,20 @@
         "aoColumnDefs": [{ "bSearchable": false, "aTargets": [8]}],
         "sAjaxSource": "{% url search_datatables query_string %}"
       });
-    });
-/*
-    $.getJSON("{% url search_json %}{{ request.GET|qsify }}", function(data) {
-      for( var i=0; i<data.length; ++i ) {
-        var user = data[i];
-        if( !$("tr#user_" + user.id).length ) {
-          $("table#ngot_data").dataTable().fnAddData( [
-            "<a class='expand' href='" + user.url + "'>" + user.name + "</a>",
-            "<a class='expand' href='" + user.url + "'>" + user.email + "</a>",
-            user.phone,
-	    user.country, user.state, user.city, user.campus, user.created_at
-	  ]);
+    };
+    window.checkReportStatus = function() {
+      $.getJSON(search_url, function(data) {
+        $("#report_status").text(data.status);
+        if( data.status == "ready" ) {
+          activateDataTable();
+        } else { 
+          window.setTimeout(checkReportStatus, 1000);
         }
-      }
+      });
+    };
+    $(window).load(function() {
+      window.setTimeout(checkReportStatus, 1000);
     });
-*/
     $(".expand_details h4.heading a").live("click", function() {
       $(this).closest("div").find("ol li, ol li ul").show(); return false;
     });
@@ -207,14 +206,14 @@
   </div>
 
   <br />
-<h1>Found: <span id="num_results">{{ num_users }}</span> people</h1>
+<h1>Search results: <span id="report_status">{{ report.status }}</span></h1>
 <div class="results-header">
   Searched for people who match::
   <pre>{{ human_query }}</pre>
 </div>
 
 <div class="datatables_wrapper">
-<table class="display" id="ngot_data">
+<table style="display: none" class="display" id="ngot_data">
   <thead>
   <tr>
     <th>Name</th>
@@ -229,27 +228,6 @@
   </tr>
   </thead>
   <tbody>
-  {% for user in users %}
-  {% ifchanged user %}
-  <tr id="user_{{ user.id }}" class="gradeA">
-    <td>
-      <a class="expand" href="{{ user.get_absolute_url }}">{{ user.first_name }} {{ user.last_name }}</a>
-    </td>
-    <td><a class="expand" href="{{ user.get_absolute_url }}">
-	{{ user.email|default:"" }}</a></td>
-    <td>
-      <a target="_blank"
-         href="{{ ACTIONKIT_URL }}/admin/core/user/{{ user.id }}/">Edit</a>
-    </td>
-    <td>{{ user.phone|default:"" }}</td>
-    <td>{{ user.country|default:"" }}</td>
-    <td>{{ user.state|default:"" }}</td>
-    <td>{{ user.city|default:"" }}</td>
-    <td>{{ user.campus|default:"" }}</td>
-    <td>{{ user.created_at|date:"Y/m/d" }}</td>
-  </tr>
-  {% endifchanged %}
-  {% endfor %}
   </tbody>
 </table>
 </div>
