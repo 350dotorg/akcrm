@@ -30,7 +30,7 @@ def make_temporary_model(table_name, extra_fields=None):
     if extra_fields:
         for field in extra_fields:
             SearchResult.add_to_class(
-                field, models.CharField(max_length=765, null=True, blank=True))
+                field, models.TextField(null=True, blank=True))
     return SearchResult
 
 class SearchField(models.Model):

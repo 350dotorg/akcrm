@@ -697,7 +697,7 @@ def build_query(querystring, queryset_modifier_fn=None):
             params=extra_params)
 
     users = users.extra(select={'phone': (
-                "SELECT `phone` FROM `core_phone` "
+                "SELECT `normalized_phone` FROM `core_phone` "
                 "WHERE `core_phone`.`user_id`=`core_user`.`id` "
                 "LIMIT 1"),
                                 'campus': (
