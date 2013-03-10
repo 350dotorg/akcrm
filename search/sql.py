@@ -42,24 +42,17 @@ def get_or_create_report(raw_sql, human_query, query_string):
         ## and I guess we'll need to store both of those handles somewhere
         report = ActiveReport(query_string=query_string, akid=handle, slug=slug)
 
-        SearchResult = create_model(report.slug)
-        report.local_table = SearchResult._meta.db_table
-
+        report.local_table = report.slug
         report.save()
 
     return report
 
 from search.models import make_temporary_model
 from django.core.management.color import no_style
-def create_model(slug):
-    ModelClass = make_temporary_model(slug)
-
+def create_model(ModelClass):
     sqls, __ = connections['dummy'].creation.sql_create_model(ModelClass, no_style())
 
     cursor = connections['dummy'].cursor()
     for sql in sqls:
-        try:
-            cursor.execute(sql)
-        except Exception:
-            pass
+        cursor.execute(sql)
     return ModelClass

@@ -4,7 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 
-def make_temporary_model(table_name):
+def make_temporary_model(table_name, extra_fields=None):
     class MyClassMetaclass(models.base.ModelBase):
         def __new__(cls, name, bases, attrs):
             name += str(table_name)
@@ -14,38 +14,7 @@ def make_temporary_model(table_name):
 
         __metaclass__ = MyClassMetaclass
 
-        id = models.IntegerField(primary_key=True)
-        created_at = models.DateTimeField()
-        updated_at = models.DateTimeField()
-        email = models.CharField(max_length=255)
-        prefix = models.CharField(max_length=765)
-        first_name = models.CharField(max_length=765)
-        middle_name = models.CharField(max_length=765)
-        last_name = models.CharField(max_length=765)
-
-        name = models.CharField(max_length=765)
-
-        suffix = models.CharField(max_length=765)
-        password = models.CharField(max_length=765)
-        subscription_status = models.CharField(max_length=765)
-        address1 = models.CharField(max_length=765)
-        address2 = models.CharField(max_length=765)
-        city = models.CharField(max_length=765)
-        state = models.CharField(max_length=765)
-        region = models.CharField(max_length=765)
-        postal = models.CharField(max_length=765)
-        zip = models.CharField(max_length=25)
-        plus4 = models.CharField(max_length=25)
-        country = models.CharField(max_length=765)
-        source = models.CharField(max_length=765)
-        rand_id = models.IntegerField()
-        lang_id = models.IntegerField(null=True, blank=True)
-
-        phone = models.CharField(max_length=255, null=True, blank=True)
-        campus = models.CharField(max_length=255, null=True, blank=True)
-        skills = models.CharField(max_length=255, null=True, blank=True)
-        engagement_level = models.CharField(max_length=255, null=True, blank=True)
-        affiliation = models.CharField(max_length=255, null=True, blank=True)
+        _aktivator_uid = models.AutoField(primary_key=True)
 
         class Meta:
             db_table = table_name[:60]
@@ -58,6 +27,10 @@ def make_temporary_model(table_name):
         def get_actionkit_url(self):
             return settings.ACTIONKIT_URL.rstrip("/") + "/admin/core/user/%s/" % self.id
 
+    if extra_fields:
+        for field in extra_fields:
+            SearchResult.add_to_class(
+                field, models.CharField(max_length=765, null=True, blank=True))
     return SearchResult
 
 class SearchField(models.Model):
@@ -103,7 +76,7 @@ from akcrm.search.utils import grouper
 
 class ActiveReport(models.Model):
     
-    query_string = models.CharField(max_length=255, unique=True)
+    query_string = models.TextField(unique=True)
     akid = models.IntegerField(unique=True)
     slug = models.SlugField(max_length=64, unique=True)
 
@@ -113,9 +86,9 @@ class ActiveReport(models.Model):
     local_table = models.CharField(max_length=100, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
 
-    def results_model(self):
+    def results_model(self, extra_fields=None):
         assert self.local_table is not None
-        return make_temporary_model(self.local_table)
+        return make_temporary_model(self.local_table, extra_fields=extra_fields)
 
     @classmethod
     def slugify(cls, sql):
@@ -146,7 +119,8 @@ class ActiveReport(models.Model):
         
         from akcrm.search import sql
         try:
-            SearchResult = self.results_model()
+            SearchResult = self.results_model(columns)
+            sql.create_model(SearchResult)
 
             results = imap(
                 lambda result: sql.result_to_model(result, SearchResult, columns), 
