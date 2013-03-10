@@ -7,7 +7,7 @@ class LazyPermissions(object):
         self._groups = None
 
     def __getattr__(self, permission):
-        if self.request.user.is_superuser:
+        if self.request.user.is_superuser or self.request.user.is_staff:
             return True
         if self._groups is None:
             self._groups = list(self.request.user.groups.values_list("name", flat=True))
