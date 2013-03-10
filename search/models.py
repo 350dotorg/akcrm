@@ -111,7 +111,8 @@ class ActiveReport(models.Model):
     message = models.TextField(null=True, blank=True)
 
     local_table = models.CharField(max_length=100, null=True, blank=True)
-    
+    created = models.DateTimeField(auto_now_add=True)
+
     def results_model(self):
         assert self.local_table is not None
         return make_temporary_model(self.local_table)
