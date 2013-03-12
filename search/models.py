@@ -29,8 +29,9 @@ def make_temporary_model(table_name, extra_fields=None):
 
     if extra_fields:
         for field in extra_fields:
-            SearchResult.add_to_class(
-                field, models.TextField(null=True, blank=True))
+            if field not in SearchResult._meta.get_all_field_names():
+                SearchResult.add_to_class(
+                    field, models.TextField(null=True, blank=True))
     return SearchResult
 
 class SearchField(models.Model):
@@ -96,6 +97,14 @@ class ActiveReport(models.Model):
         slug = slugify(hash)
         return slug
     
+    def reset(self):
+        if self.local_table:
+            from django.db import connections
+            cursor = connections['dummy'].cursor()
+            cursor.execute("DROP TABLE %s" % self.local_table)
+        self.status = None
+        self.save()
+
     # @@TODO this should commit transactions during each save()
     def poll_results(self):
         if self.status == "ready":
