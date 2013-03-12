@@ -18,12 +18,24 @@
         "sAjaxSource": "{% url search_datatables query_string %}"
       });
     };
+    window.aktivator = {};
+    window.aktivator.numPolls = 0;
     window.checkReportStatus = function() {
+      aktivator.numPolls += 1
       $.getJSON(search_url, function(data) {
-        $("#report_status").text(data.status);
         if( data.status == "ready" ) {
+          $("#report_status").hide();
           activateDataTable();
+        } else if( data.status == "exception") {
+          $("#report_status").html("There was an error running this search -- sorry!<br/>We're working on it.");
         } else { 
+          if( aktivator.numPolls > 9 ) { 
+            {% if request.PERMISSIONS.search_saved %}
+            $("#report_status").html("This search seems to be taking a long time.  If you want, you can <a href='" + $("a#save_search").attr("href") + "'>save this search</a> and come back to it later -- we'll keep running the search even if you leave this page.");
+            {% else %}
+            $("#report_status").text("This search seems to be taking a long time.  If you want, you can bookmark this page and come back to it later -- we'll keep running the search even if you leave this page.");
+            {% endif %}
+          }
           window.setTimeout(checkReportStatus, 1000);
         }
       });
@@ -197,7 +209,7 @@
 	  {% endif %}
 	  {% if request.PERMISSIONS.search_save %}
 	  <li>
-	    <a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
+	    <a id="save_search" href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
 	  </li>
 	  {% endif %}
 	</ul>
@@ -206,7 +218,13 @@
   </div>
 
   <br />
-<h1>Search results: <span id="report_status">{{ report.status }}</span></h1>
+<h1 id="report_status">
+{% if report.status == "ready" %}
+Loading search results
+{% else %}
+Search in progress; please wait...
+{% endif %}
+</h1>
 <div class="results-header">
   Searched for people who match::
   <pre>{{ human_query }}</pre>
