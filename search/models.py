@@ -75,6 +75,7 @@ import hashlib
 from akcrm.actionkit import rest
 from itertools import imap
 from akcrm.search.utils import grouper
+import json
 
 class ActiveReport(models.Model):
     
@@ -88,9 +89,21 @@ class ActiveReport(models.Model):
     local_table = models.CharField(max_length=100, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
 
-    def results_model(self, extra_fields=None):
-        assert self.local_table is not None
-        return make_temporary_model(self.local_table, extra_fields=extra_fields)
+    local_table_columns = models.TextField(null=True, blank=True)
+
+    def set_columns(self, columns=[]):
+        self.local_table_columns = json.dumps(columns)
+        self.save()
+
+    def get_columns(self):
+        try:
+            return json.loads(self.local_table_columns)
+        except (TypeError, ValueError):
+            return None
+
+    def results_model(self):
+        assert self.local_table is not None and self.get_columns() is not None
+        return make_temporary_model(self.local_table, extra_fields=self.get_columns())
 
     @classmethod
     def slugify(cls, sql):
@@ -132,7 +145,8 @@ class ActiveReport(models.Model):
         
         from akcrm.search import sql
         try:
-            SearchResult = self.results_model(columns)
+            self.set_columns(columns)
+            SearchResult = self.results_model()
             sql.create_model(SearchResult)
 
             results = imap(

@@ -511,6 +511,10 @@ def search_datatables(request, query_string):
     query_string = normalize_querystring(QueryDict(query_string))
 
     report = ActiveReport.objects.get(query_string=query_string)
+
+    if report.status != "ready":
+        return HttpResponse("not ready")
+
     SearchResult = report.results_model()
 
     models = SearchResult.objects.using("dummy").all()
