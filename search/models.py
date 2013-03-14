@@ -1,5 +1,6 @@
 from akcrm.actionkit.models import CoreUser
 from collections import namedtuple
+import datetime
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -7,7 +8,7 @@ from django.conf import settings
 def make_temporary_model(table_name, extra_fields=None):
     class MyClassMetaclass(models.base.ModelBase):
         def __new__(cls, name, bases, attrs):
-            name += str(table_name)
+            name += str(table_name) + datetime.datetime.now().isoformat()
             return models.base.ModelBase.__new__(cls, name, bases, attrs)
 
     class SearchResult(models.Model):
@@ -101,7 +102,10 @@ class ActiveReport(models.Model):
         if self.local_table:
             from django.db import connections
             cursor = connections['dummy'].cursor()
-            cursor.execute("DROP TABLE %s" % self.local_table)
+            try:
+                cursor.execute("DROP TABLE %s" % self.local_table)
+            except:
+                pass
         self.status = None
         self.save()
 
@@ -142,7 +146,8 @@ class ActiveReport(models.Model):
                     (obj for obj in chunk if obj is not None))
         except Exception, e:
             self.status = "exception"
-            self.message = str(e)
+            import traceback
+            self.message = traceback.format_exc()
             self.save()
             raise e
 
