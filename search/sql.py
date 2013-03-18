@@ -54,5 +54,9 @@ def create_model(ModelClass):
 
     cursor = connections['dummy'].cursor()
     for sql in sqls:
-        cursor.execute(sql)
+        # @@TODO
+        try:
+            cursor.execute(sql)
+        except Exception, e:
+            pass
     return ModelClass
