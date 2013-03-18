@@ -41,9 +41,11 @@
       });
     };
     $(window).load(function() {
-      window.aktivator.throbber = new Throbber(20)
-        .appendTo( document.getElementById("report_status") )
+      var throbber = window.aktivator.throbber = new Throbber(
+          {"size": 20, "color": "black"})
         .start();
+      throbber.elem.style.display = "inline";
+      $(throbber.elem).prependTo("#report_status");
       window.setTimeout(checkReportStatus, 1000);
     });
     $(".expand_details h4.heading a").live("click", function() {
