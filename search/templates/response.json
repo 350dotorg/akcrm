@@ -1,0 +1,10 @@
+{"sColumns": "{{cSolumns}}", "iTotalRecords": {{iTotalRecords}}, "aaData": [
+{% for item in querySet %}
+ [
+  "<a class='expand'  href='{{ item.get_absolute_url }}'>{{ item.name }}</a>", 
+  "<a class='expand'  href='{{ item.get_absolute_url }}'>{{ item.email }}</a>", 
+  "<a target='_blank' href='{{ item.get_actionkit_url }}'>{{ item.id }}</a>",
+  "{{ item.phone|default:'' }}", "{{ item.country }}", "{{ item.state }}", "{{ item.city }}",
+  "{{ item.campus|default:'' }}", "{{ item.created_at }}"
+ ]{% if not forloop.last %},{% endif %}
+{% endfor %}], "sEcho": {{sEcho}}, "iTotalDisplayRecords": {{iTotalDisplayRecords}} }

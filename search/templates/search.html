@@ -4,32 +4,45 @@
 <head>
   {% block head %}
   <script type="text/javascript">
-    $(window).load(function() {
-      $("#num_results").text($("tr.gradeA").length);
-      $("table#ngot_data").dataTable({
+    var search_url = window.location.toString();
+    window.activateDataTable = function() {
+      $("table#ngot_data").show().dataTable({
         "bJQueryUI": true,
         "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
           nRow.class = "gradeA";
           return nRow;
         },
-        "sPaginationType": "full_numbers"
+        "sPaginationType": "full_numbers",
+        "bServerSide": true,
+        "aoColumnDefs": [{ "bSearchable": false, "aTargets": [8]}],
+        "sAjaxSource": "{% url search_datatables query_string %}"
       });
-    });
-/*
-    $.getJSON("{% url search_json %}{{ request.GET|qsify }}", function(data) {
-      for( var i=0; i<data.length; ++i ) {
-        var user = data[i];
-        if( !$("tr#user_" + user.id).length ) {
-          $("table#ngot_data").dataTable().fnAddData( [
-            "<a class='expand' href='" + user.url + "'>" + user.name + "</a>",
-            "<a class='expand' href='" + user.url + "'>" + user.email + "</a>",
-            user.phone,
-	    user.country, user.state, user.city, user.campus, user.created_at
-	  ]);
+    };
+    window.aktivator = {};
+    window.aktivator.numPolls = 0;
+    window.checkReportStatus = function() {
+      aktivator.numPolls += 1
+      $.getJSON(search_url, function(data) {
+        if( data.status == "ready" ) {
+          $("#report_status").hide();
+          activateDataTable();
+        } else if( data.status == "exception") {
+          $("#report_status").html("There was an error running this search -- sorry!<br/>We're working on it.");
+        } else { 
+          if( aktivator.numPolls > 9 ) { 
+            {% if request.PERMISSIONS.search_saved %}
+            $("#report_status").html("This search seems to be taking a long time.  If you want, you can <a href='" + $("a#save_search").attr("href") + "'>save this search</a> and come back to it later -- we'll keep running the search even if you leave this page.");
+            {% else %}
+            $("#report_status").text("This search seems to be taking a long time.  If you want, you can bookmark this page and come back to it later -- we'll keep running the search even if you leave this page.");
+            {% endif %}
+          }
+          window.setTimeout(checkReportStatus, 1000);
         }
-      }
+      });
+    };
+    $(window).load(function() {
+      window.setTimeout(checkReportStatus, 1000);
     });
-*/
     $(".expand_details h4.heading a").live("click", function() {
       $(this).closest("div").find("ol li, ol li ul").show(); return false;
     });
@@ -196,7 +209,7 @@
 	  {% endif %}
 	  {% if request.PERMISSIONS.search_save %}
 	  <li>
-	    <a href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
+	    <a id="save_search" href="{% url search_save %}?{{request.META.QUERY_STRING}}">Save Search</a>
 	  </li>
 	  {% endif %}
 	</ul>
@@ -205,14 +218,20 @@
   </div>
 
   <br />
-<h1>Found: <span id="num_results">{{ users|length }}</span> people</h1>
+<h1 id="report_status">
+{% if report.status == "ready" %}
+Loading search results
+{% else %}
+Search in progress; please wait...
+{% endif %}
+</h1>
 <div class="results-header">
   Searched for people who match::
   <pre>{{ human_query }}</pre>
 </div>
 
 <div class="datatables_wrapper">
-<table class="display" id="ngot_data">
+<table style="display: none" class="display" id="ngot_data">
   <thead>
   <tr>
     <th>Name</th>
@@ -227,26 +246,6 @@
   </tr>
   </thead>
   <tbody>
-  {% for user in users %}
-  {% ifchanged user %}
-  <tr id="user_{{ user.id }}" class="gradeA">
-    <td><a class="expand" href="{{ user.get_absolute_url }}">
-	{{ user|default:"" }}</a></td>
-    <td><a class="expand" href="{{ user.get_absolute_url }}">
-	{{ user.email|default:"" }}</a></td>
-    <td>
-      <a target="_blank"
-         href="{{ ACTIONKIT_URL }}/admin/core/user/{{ user.id }}/">Edit</a>
-    </td>
-    <td>{{ user.phone|default:"" }}</td>
-    <td>{{ user.country|default:"" }}</td>
-    <td>{{ user.state|default:"" }}</td>
-    <td>{{ user.city|default:"" }}</td>
-    <td>{{ user.campus|default:"" }}</td>
-    <td>{{ user.created_at|date:"Y/m/d" }}</td>
-  </tr>
-  {% endifchanged %}
-  {% endfor %}
   </tbody>
 </table>
 </div>

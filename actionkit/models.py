@@ -1,12 +1,10 @@
 from django.db import models
 
-
 class CoreLanguage(models.Model):
     name = models.TextField()
     class Meta:
         db_table = u'core_language'
         managed = False
-
 
 class CoreUser(models.Model):
     id = models.IntegerField(primary_key=True)

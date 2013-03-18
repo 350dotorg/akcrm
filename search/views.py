@@ -15,7 +15,7 @@ from django.db.models import Sum
 from djangohelpers import rendered_with, allow_http
 from djangohelpers.templatetags.helpful_tags import qsify
 from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, QueryDict
 from django.shortcuts import get_object_or_404, redirect
 from django.template.defaultfilters import date
 from django.utils.simplejson import JSONEncoder
@@ -28,6 +28,7 @@ import re
 import urllib2
 from operator import attrgetter
 from operator import itemgetter
+from itertools import imap
 
 from akcrm.cms.models import AllowedTag
 from akcrm.crm.forms import ContactForm
@@ -35,10 +36,13 @@ from akcrm.crm.forms import SearchQueryForm
 from akcrm.crm.models import ContactRecord
 from akcrm.cms.models import HomePageHtml
 from akcrm.permissions import authorize
-from akcrm.search.models import AgentTag
+from akcrm.search import sql
+from akcrm.search.models import AgentTag, ActiveReport
 from akcrm.search.utils import clamp
+from akcrm.search.utils import grouper
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
+from akcrm.search.utils import normalize_querystring
 
 def make_default_user_query(users, query_data, values, search_on, extra_data={}):
     """
@@ -460,9 +464,20 @@ def search(request):
         resp = redirect("search_count")
         resp['Location'] += "%s" % qsify(request.GET)
         return resp
-    ctx = _search(request)
+
+    try:
+        query = build_query(request.META['QUERY_STRING'])
+        report = _search2(request, query)
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+
+    ctx = dict(human_query=query.human_query, report=report, 
+               query_string=query.query_string)
+
+    request.session['akcrm.query'] = query.query_string
+    ctx['request'] = request
+    
     ctx['ACTIONKIT_URL'] = settings.ACTIONKIT_URL
-    users = ctx['users']
 
     if getattr(request.PERMISSIONS, 'add_contact_record'):
         contact_form = ContactForm(initial={
@@ -470,77 +485,103 @@ def search(request):
                 })
         ctx['contact_form'] = contact_form
 
+    if request.is_ajax():
+        return HttpResponse(json.dumps(dict(status=report.status)), 
+                            content_type="application/json")
     return ctx
 
 @allow_http("GET")
 @rendered_with("search_count.html")
 def search_count(request):
-    ctx = _search(request)
-    users = ctx.pop('users')
-    num_users = users.count()
-    ctx['num_users'] = num_users
-    return ctx
+    try:
+        query = build_query(request.META['QUERY_STRING'],
+                             queryset_modifier_fn=lambda x: x.values_list("id"))
+        report = _search2(request, query)
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+
+    if report.status != "ready":
+        return HttpResponse("not ready")
+
+    num_users = report.results_model().objects.using("dummy").all().count()
+    return HttpResponse(num_users, content_type="text/plain")
 
 @allow_http("GET")
-def search_json(request):
-    ctx = _search(request)
-    users = ctx['users']
-    
-    users_json = []
-    for user in users:
-        users_json.append(dict(
-                id=user.id,
-                url=user.get_absolute_url(),
-                name=unicode(user),
-                email=user.email,
-                phone=unicode(user.phone or ''),
-                country=user.country,
-                state=user.state,
-                city=user.city,
-                campus=user.campus(),
-                created_at=user.created_at.strftime("%m/%d/%Y"),
-                ))
-    users_json = json.dumps(users_json)
-    return HttpResponse(users_json, content_type="application/json")
+def search_datatables(request, query_string):
+    query_string = normalize_querystring(QueryDict(query_string))
+
+    report = ActiveReport.objects.get(query_string=query_string)
+
+    if report.status != "ready":
+        return HttpResponse("not ready")
+
+    SearchResult = report.results_model()
+
+    models = SearchResult.objects.using("dummy").all()
+    from search.datatables import datatablize
+    return datatablize(request, models, dict(enumerate([
+                    "name", "email", "id",
+                    "phone", "country", "state", "city", "campus",
+                    "created_at",
+                    ])), jsonTemplatePath="response.json")
 
 def search_raw_sql(request):
-    users = _search(request)['users']
-
-    akids = users.values_list("id", flat=True)
-    akids = list(akids)
-
-    from django.db import connections
-    query = connections['ak'].queries[0]['sql']
-
-    ctx = dict(
-        akids=akids,
-        query=query
-        )
-
-    return HttpResponse(query, content_type="text/plain")
+    """
+    Returns the raw SQL for this search, modified to only return core_user.id 
+    since that is what is most commonly needed in Actionkit administrative
+    contexts like mail targeting.
+    """
+    try:
+        query = build_query(request.META['QUERY_STRING'],
+                            queryset_modifier_fn=lambda x: x.values_list("id"))
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+    return HttpResponse(query.raw_sql, content_type="text/plain")
 
 @allow_http("GET")
 def search_just_akids(request):
-    users = _search(request)['users']
+    try:
+        query = build_query(request.META['QUERY_STRING'],
+                             queryset_modifier_fn=lambda x: x.values_list("id"))
+        report = _search2(request, query)
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
 
-    akids = users.values_list("id", flat=True).distinct()
-    akids = set(list(akids))
+    if report.status != "ready":
+        return HttpResponse("not ready")
 
+    akids = report.results_model().objects.using("dummy").values_list("id", flat=True).distinct()
     akids = ", ".join(str(i) for i in akids)
     return HttpResponse(akids, content_type="text/plain")
 
-def _search(request):
-    base_user_query = CoreUser.objects.using("ak").order_by(
-        "id")
+
+class NonNormalQuerystring(Exception):
+    def __init__(self, normalized):
+        self.normalized = normalized
+
+    def redirect(self, request):
+        return redirect(request.path + "?" + self.normalized)
+
+from collections import namedtuple
+Query = namedtuple("Query", "human_query query_string includes params raw_sql")
+
+def build_query(querystring, queryset_modifier_fn=None):
+    query_params = QueryDict(querystring)
+    normalized = normalize_querystring(query_params)
+    if normalized != querystring:
+        raise NonNormalQuerystring(normalized)
+    querystring = normalized
+
+    base_user_query = CoreUser.objects.using("ak").order_by("id")
     
     includes = []
 
     include_pattern = re.compile("^include:\d+$")
-    for key in request.GET.keys():
+    for key in query_params.keys():
         if (include_pattern.match(key)
-            and request.GET[key]
-            and (not request.GET[key].endswith('_istoggle'))):
-            includes.append((key, request.GET.getlist(key)))
+            and query_params[key]
+            and (not query_params[key].endswith('_istoggle'))):
+            includes.append((key, query_params.getlist(key)))
 
     human_query = []
 
@@ -561,7 +602,7 @@ def _search(request):
             if item == 'more_actions__since':
                 continue
 
-            possible_values = request.GET.getlist(
+            possible_values = query_params.getlist(
                 "%s_%s" % (include_group[0], item))
             if len(possible_values) == 0:
                 continue
@@ -569,7 +610,7 @@ def _search(request):
             extra_data = {}
 
             istogglename = '%s_%s_istoggle' % (include_group[0], item)
-            istoggle = request.GET.get(istogglename, '1')
+            istoggle = query_params.get(istogglename, '1')
             try:
                 istoggle = bool(int(istoggle))
             except ValueError:
@@ -580,7 +621,7 @@ def _search(request):
             # these two fields are together, if we have another case like this
             # we should probably formalize this
             if item == "zipcode":
-                distance = request.GET.get('%s_zipcode__distance' % include_group[0])
+                distance = query_params.get('%s_zipcode__distance' % include_group[0])
                 if distance:
                     extra_data['distance'] = distance
 
@@ -588,34 +629,37 @@ def _search(request):
             # these two fields are together, if we have another case like this
             # we should probably formalize this
             if item == "contacted_since":
-                contacted_by = request.GET.get('%s_contacted_since__contacted_by' % include_group[0])
+                contacted_by = query_params.get(
+                    '%s_contacted_since__contacted_by' % include_group[0])
                 if contacted_by:
                     extra_data['contacted_by'] = contacted_by
 
             if item == "contacted_by":
-                contacted_since = request.GET.get('%s_contacted_by__contacted_since' % include_group[0])
+                contacted_since = query_params.get(
+                    '%s_contacted_by__contacted_since' % include_group[0])
                 if contacted_since:
                     extra_data['contacted_since'] = contacted_since
 
             if item == "emails_opened":
-                since = request.GET.get('%s_emails_opened__since' % include_group[0])
+                since = query_params.get('%s_emails_opened__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
             if item == "more_actions":
-                since = request.GET.get('%s_more_actions__since' % include_group[0])
+                since = query_params.get('%s_more_actions__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
             if item == "donated_more":
-                since = request.GET.get('%s_donated_more__since' % include_group[0])
+                since = query_params.get('%s_donated_more__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
             if item == "donated_times":
-                since = request.GET.get('%s_donated_times__since' % include_group[0])
+                since = query_params.get('%s_donated_times__since' % include_group[0])
                 if since:
                     extra_data['since'] = since
 
             make_query_fn = query_data.get('query_fn', make_default_user_query)
-            users, __human_query = make_query_fn(users, query_data, possible_values, item, extra_data)
+            users, __human_query = make_query_fn(
+                users, query_data, possible_values, item, extra_data)
             _human_query.append(__human_query)
 
         if not _human_query or (
@@ -636,22 +680,19 @@ def _search(request):
     if users is None:
         users = base_user_query
 
-    ctx = dict(includes=includes,
-               params=request.GET)
-
     ### If both of user_name and user_email are filled out,
     ### search for anyone who matches EITHER condition, rather than both.
     extra_where = []
     extra_params = []
-    if request.GET.get("user_name"):
+    if query_params.get("user_name"):
         extra_where.append(
             "CONCAT(`core_user`.`first_name`, ' ', `core_user`.`last_name`) LIKE %s")
-        extra_params.append("%" + "%".join(request.GET['user_name'].split()) + "%")
-        human_query += "\n and name is like \"%s\"" % request.GET['user_name']
-    if request.GET.get("user_email"):
+        extra_params.append("%" + "%".join(query_params['user_name'].split()) + "%")
+        human_query += "\n and name is like \"%s\"" % query_params['user_name']
+    if query_params.get("user_email"):
         extra_where.append("`core_user`.`email` LIKE %s")
-        extra_params.append("%" + request.GET.get("user_email") + "%")
-        human_query += "\n and email is like \"%s\"" % request.GET['user_email']
+        extra_params.append("%" + query_params.get("user_email") + "%")
+        human_query += "\n and email is like \"%s\"" % query_params['user_email']
     if len(extra_where):
         if len(extra_where) == 2:
             extra_where = ["(%s OR %s)" % tuple(extra_where)]
@@ -660,34 +701,69 @@ def _search(request):
             params=extra_params)
 
     users = users.extra(select={'phone': (
-                "SELECT `phone` FROM `core_phone` "
+                "SELECT `normalized_phone` FROM `core_phone` "
                 "WHERE `core_phone`.`user_id`=`core_user`.`id` "
                 "LIMIT 1"),
                                 'campus': (
                 "SELECT `value` from `core_userfield` "
                 "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
                 'AND `core_userfield`.`name`="campus" LIMIT 1'),
+                                'name': (
+                "CONCAT(CONCAT(first_name, \" \"), last_name)"),
+                                'skills': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="skills" LIMIT 1'),
+                                'engagement_level': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="engagement_level" LIMIT 1'),
+                                'affiliation': (
+                "SELECT `value` from `core_userfield` "
+                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                'AND `core_userfield`.`name`="affiliation" LIMIT 1'),
                                 })
     if users.query.sql_with_params() == base_user_query.query.sql_with_params():
         users = base_user_query.none()
 
-    ctx['human_query'] = human_query
-    ctx['users'] = users
-    ctx['request'] = request
-    request.session['akcrm.query'] = request.GET.urlencode()
-    num_results = len(users)
+    if queryset_modifier_fn is not None:
+        users = queryset_modifier_fn(users)
 
-    log = open("/tmp/aktivator.log", 'a')
-    print >> log, "%s | %s | %s | %s | %s | %s" % (
-        datetime.datetime.now(),
-        request.user.username,
-        request.GET.urlencode(),
-        users.query.sql_with_params(),
-        num_results,
-        connections['ak'].queries)
-    log.close()
+    users = users.distinct()
+    raw_sql = sql.raw_sql_from_queryset(users)
 
-    return ctx
+    del users
+
+    return Query(human_query, querystring, includes, query_params, raw_sql)
+
+def error(request, message):
+    return dict(message=message)
+
+def _search2(request, query):
+    querystring = query.query_string
+    query_params = QueryDict(querystring)
+    normalized = normalize_querystring(query_params)
+    if normalized != querystring:
+        raise NonNormalQuerystring(normalized)
+    querystring = normalized
+
+    report = sql.get_or_create_report(query.raw_sql, query.human_query, querystring)
+
+    if report.status is None:
+        method = settings.AKTIVATOR_REPORT_POLLING_METHOD
+        assert method in ("synchronous", "celery", "thread", "cron")
+        if method == "celery":
+            from akcrm.search.tasks import poll_report
+            poll_report.delay(report)
+        elif method == "thread":
+            import threading
+            threading.Thread(target=report.poll_results).start()
+        elif method == "synchronous":
+            report.poll_results()
+        elif method == "cron":
+            pass
+
+    return report
 
 @allow_http("GET")
 @rendered_with("detail.html")
@@ -736,14 +812,26 @@ def detail_json(request, user_id):
 def _detail(request, user_id):
     try:
         agent = CoreUser.objects.using("ak").extra(select={'phone': (
-                "SELECT `phone` FROM `core_phone` "
-                "WHERE `core_phone`.`user_id`=`core_user`.`id` "
-                "LIMIT 1"),
-                                'campus': (
-                "SELECT `value` from `core_userfield` "
-                "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
-                'AND `core_userfield`.`name`="campus" LIMIT 1'),
-                                }).get(id=user_id)
+                    "SELECT `phone` FROM `core_phone` "
+                    "WHERE `core_phone`.`user_id`=`core_user`.`id` "
+                    "LIMIT 1"),
+                                                           'campus': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="campus" LIMIT 1'),
+                                                           'skills': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="skills" LIMIT 1'),
+                                                           'engagement_level': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="engagement_level" LIMIT 1'),
+                                                           'affiliation': (
+                    "SELECT `value` from `core_userfield` "
+                    "WHERE`core_userfield`.`parent_id`=`core_user`.`id` "
+                    'AND `core_userfield`.`name`="affiliation" LIMIT 1'),
+                                                           }).get(id=user_id)
     except CoreUser.DoesNotExist:
         return HttpResponseNotFound("No such record exists")
 
@@ -963,30 +1051,19 @@ def safe_encode(value):
     return str(value)
 
 
-def user_to_csv_row(user, fields, field_fns):
+def user_to_csv_row(user, fields):
     row = []
     for field in fields:
-        field_fn = field_fns.get(field, None)
-        if field_fn is not None:
-            value = field_fn(user)
-        else:
-            value = getattr(user, field, '') or ''
-            if callable(value):
-                value = value()
+        value = getattr(user, field, '') or ''
+        if callable(value):
+            value = value()
         value = safe_encode(value)
         row.append(value)
     return row
 
 
-def corefield_value(field_name):
-    def get_corefield(user):
-        values = [f.value for f in user.fields.all() if f.name == field_name]
-        return ','.join(values)
-    return get_corefield
-
-
 @authorize("search_export")
-@allow_http("GET")
+@allow_http("GET", "POST")
 @rendered_with("search_csv.html")
 def search_csv(request):
     user_fields = ['first_name', 'last_name', 'email',
@@ -994,25 +1071,32 @@ def search_csv(request):
                    'postal', 'zip', 'country',
                    'source', 'subscription_status', 'phone', 'campus',
                    'skills', 'engagement_level', 'affiliation']
-    field_fns = dict(skills=corefield_value('skills'),
-                     engagement_level=corefield_value('engagement_level'),
-                     affiliation=corefield_value('affiliation'))
-    fields = request.GET.getlist('fields')
-    if not fields:
+    fields = request.POST.getlist('fields')
+    if request.method == "GET" or not fields:
         keyvals = []
-        for key in request.GET.keys():
-            for value in request.GET.getlist(key):
+        for key in request.POST.keys():
+            for value in request.POST.getlist(key):
                 keyvals.append((key, value))
         return dict(fields=user_fields,
                     keyvals=keyvals,
-                    request=request)
+                    request=request,
+                    query_string=request.META['QUERY_STRING'])
 
     buffer = StringIO()
     writer = csv.writer(buffer)
     writer.writerow(fields)
-    users = _search(request)['users']
+    try:
+        query = build_query(request.META['QUERY_STRING'])
+        report = _search2(request, query)
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+
+    if report.status != "ready":
+        return HttpResponse("not ready")
+
+    users = report.results_model().objects.using("dummy").all()
     for user in users:
-        row = user_to_csv_row(user, fields, field_fns)
+        row = user_to_csv_row(user, fields)
         writer.writerow(row)
     response = HttpResponse(buffer.getvalue())
     response['Content-Type'] = 'text/csv'

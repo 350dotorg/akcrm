@@ -151,6 +151,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
     )
 
+AKTIVATOR_REPORT_POLLING_METHOD = "thread"
+
 try:
     from local_settings import *
 except ImportError:

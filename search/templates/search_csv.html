@@ -7,22 +7,26 @@
   {% endblock %}
   {% block content %}
   <h2>Export fields</h2>
-  <form method="GET"
-        action="{% url search_csv %}">
-    
+  <form method="POST"
+        action="{% url search_csv %}?{{ query_string }}">
+    {% csrf_token %}
+
     {% for key,value in keyvals %}
-      <input type="hidden" name="{{key}}" value="{{value}}" />
+    <input type="hidden" name="{{ key }}" value="{{ value }}" />
     {% endfor %}
 
     {% for field in fields %}
-      <input type="checkbox"
-             name="fields" value="{{field}}"
+    <label style="display: inline" for="field_{{ field }}">
+      <input style="display: inline" type="checkbox" id="field_{{ field }}"
+             name="fields" value="{{ field }}"
              checked="checked" />
-      {{field}}
-      <br />
-    {% endfor %}
+      {{ field }}
+    </label>
     <br />
-   <input type="submit" value="Export CSV" />
+    {% endfor %}
+
+    <br />
+    <input type="submit" value="Export CSV" />
   </form>
   {% endblock %}
 </body>
