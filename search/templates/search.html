@@ -41,6 +41,9 @@
       });
     };
     $(window).load(function() {
+      window.aktivator.throbber = new Throbber(20)
+        .appendTo( document.getElementById("report_status") )
+        .start();
       window.setTimeout(checkReportStatus, 1000);
     });
     $(".expand_details h4.heading a").live("click", function() {
