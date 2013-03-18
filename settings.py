@@ -9,6 +9,12 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
+
 TIME_ZONE = 'America/Chicago'
 
 LANGUAGE_CODE = 'en-us'

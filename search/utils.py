@@ -4,6 +4,17 @@ from math import radians
 from json import loads
 from itertools import izip_longest
 from urllib import quote
+from django.core.cache import cache
+from hashlib import md5
+import pickle
+
+def cached(queryset):
+    key = md5(pickle.dumps(queryset.query.sql_with_params())).hexdigest()
+    value = cache.get(key)
+    if value:
+        return value
+    cache.set(key, queryset, 600)
+    return cache.get(key) 
 
 def normalize_querystring(qd):
     querystring = qd.copy()

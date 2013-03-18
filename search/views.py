@@ -43,6 +43,7 @@ from akcrm.search.utils import grouper
 from akcrm.search.utils import latlon_bbox
 from akcrm.search.utils import zipcode_to_latlon
 from akcrm.search.utils import normalize_querystring
+from akcrm.search.utils import cached
 
 def make_default_user_query(users, query_data, values, search_on, extra_data={}):
     """
@@ -401,22 +402,31 @@ def sources(request):
         sources = []
     return HttpResponse(json.dumps(sources), content_type='application/json')
 
-
 @allow_http("GET")
 @rendered_with("home.html")
 def home(request):
-    tags = CoreTag.objects.using("ak").all().order_by("name")
-    countries = CoreUser.objects.using("ak").values_list("country", flat=True).distinct().order_by("country")
+    tags = cached(CoreTag.objects.using("ak").all().order_by("name"))
+    countries = cached(CoreUser.objects.using("ak").values_list(
+            "country", flat=True).distinct().order_by("country"))
 
-    pages = CorePage.objects.using("ak").all().order_by("title")
+    pages = cached(CorePage.objects.using("ak").all().order_by("title"))
 
-    campuses = CoreUserField.objects.using("ak").filter(name="campus").values_list("value", flat=True).distinct().order_by("value")
+    campuses = cached(CoreUserField.objects.using("ak").filter(
+            name="campus").values_list(
+            "value", flat=True).distinct().order_by("value"))
 
-    skills = CoreUserField.objects.using("ak").filter(name="skills").values_list("value", flat=True).distinct().order_by("value")
-    engagement_levels = CoreUserField.objects.using("ak").filter(name="engagement_level").values_list("value", flat=True).distinct().order_by("value")
-    affiliations = CoreUserField.objects.using("ak").filter(name="affiliation").values_list("value", flat=True).distinct().order_by("value")
+    skills = cached(CoreUserField.objects.using("ak").filter(
+            name="skills").values_list(
+            "value", flat=True).distinct().order_by("value"))
+    engagement_levels = cached(CoreUserField.objects.using("ak").filter(
+        name="engagement_level").values_list(
+        "value", flat=True).distinct().order_by("value"))
+    affiliations = cached(CoreUserField.objects.using("ak").filter(
+            name="affiliation").values_list(
+            "value", flat=True).distinct().order_by("value"))
 
-    languages = CoreLanguage.objects.using("ak").all().distinct().order_by("name")
+    languages = cached(CoreLanguage.objects.using(
+            "ak").all().distinct().order_by("name"))
 
     homepagehtml = None
     for htmlobj in HomePageHtml.objects.all():
