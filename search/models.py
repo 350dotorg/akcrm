@@ -120,6 +120,7 @@ class ActiveReport(models.Model):
             except:
                 pass
         self.status = None
+        self.message = None
         self.save()
 
     # @@TODO this should commit transactions during each save()
