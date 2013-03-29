@@ -79,7 +79,7 @@ console.log(anchor);
               if( countries.length ) {
                 newEl.closest(".and-group").find("option[value=state]").removeAttr("disabled");
                 var country_string = "country=" + countries.join("&country=");
-                $.getJSON("{% url choices_states %}?" + country_string, 
+                $.getJSON("{% url 'choices_states' %}?" + country_string, 
                   function(data) {
                     newEl.data("available_states", data);
                     newEl.closest(".and-group").find("select[name$=_state]").trigger("akcrm:findfields");
@@ -161,10 +161,10 @@ console.log(anchor);
 {% block nav %}
 <li class="active"><a href="/">New Search</a></li>
 {% if request.PERMISSIONS.add_allowed_tags %}
-<li><a href="{% url allowed_tags %}">Manage Tags</a></li>
+<li><a href="{% url 'allowed_tags' %}">Manage Tags</a></li>
 {% endif %}
 {% if request.PERMISSIONS.search_saved %}
-<li><a href="{% url search_saved request.user.username %}">Saved Searches</a></li>
+<li><a href="{% url 'search_saved' request.user.username %}">Saved Searches</a></li>
 {% endif %}
 {% endblock %}
 
@@ -246,7 +246,7 @@ console.log(anchor);
      type="text"
      name="source"
      multiple="multiple"
-     autocomplete="{% url autocomplete_sources %}"
+     autocomplete="{% url 'autocomplete_sources' %}"
      />
 
   <select id="template_tag"
@@ -265,7 +265,7 @@ console.log(anchor);
      type="text"
      name="campus"
      multiple="multiple"
-     autocomplete="{% url autocomplete_campuses %}"
+     autocomplete="{% url 'autocomplete_campuses' %}"
      />
 
   <select id="template_skills"
