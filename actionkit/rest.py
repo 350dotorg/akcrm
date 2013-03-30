@@ -58,8 +58,9 @@ def create_report(sql, description, name, short_name):
     if not host.startswith("https"):
         host = "https://" + host
 
-    data = json.dumps(dict(sql=sql, description=description, name=name, short_name=short_name,
-                           hidden=True))
+    data = json.dumps(dict(sql=sql, description=description, 
+                           name=name, short_name=short_name,
+                           hidden=False))
 
     url = "%s/rest/v1/queryreport/" % host
     resp = requests.post(url, auth=HTTPBasicAuth(
@@ -69,6 +70,35 @@ def create_report(sql, description, name, short_name):
     assert resp.status_code == 201
     location = resp.headers['Location']
     return {"id": location.strip("/").split("/")[-1], "short_name": short_name}
+
+def unhide_report(report_id):
+    host = settings.ACTIONKIT_API_HOST
+    if not host.startswith("https"):
+        host = "https://" + host
+
+    from actionkit.models import QueryReport
+    report = QueryReport.objects.using("ak").select_related("report_ptr").get(
+        report_ptr__id=report_id)
+    data = json.dumps(dict(hidden=False, 
+                           sql=report.sql, name=report.report_ptr.name,
+                           short_name=report.report_ptr.short_name))
+    url = "%s/rest/v1/queryreport/%s/" % (host, report_id)
+
+    resp = requests.put(url, auth=HTTPBasicAuth(
+            settings.ACTIONKIT_API_USER, settings.ACTIONKIT_API_PASSWORD),
+                        headers={'content-type': 'application/json'},
+                        data=data)
+    assert resp.status_code == 201
+
+def delete_report(report_id):
+    host = settings.ACTIONKIT_API_HOST
+    if not host.startswith("https"):
+        host = "https://" + host
+
+    url = "%s/rest/v1/queryreport/%s/" % (host, report_id)
+    resp = requests.delete(url, auth=HTTPBasicAuth(
+            settings.ACTIONKIT_API_USER, settings.ACTIONKIT_API_PASSWORD))
+    assert resp.status_code == 204
 
 def run_report(name):
     host = settings.ACTIONKIT_API_HOST

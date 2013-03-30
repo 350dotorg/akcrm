@@ -749,6 +749,9 @@ def build_query(querystring, queryset_modifier_fn=None):
 def error(request, message):
     return dict(message=message)
 
+from django.db import transaction
+
+@transaction.autocommit
 def _search2(request, query):
     querystring = query.query_string
     query_params = QueryDict(querystring)
@@ -771,7 +774,7 @@ def _search2(request, query):
         elif method == "synchronous":
             report.poll_results()
         elif method == "cron":
-            pass
+            raise NotImplementedError()
 
     return report
 

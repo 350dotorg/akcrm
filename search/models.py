@@ -82,6 +82,8 @@ class ActiveReport(models.Model):
     query_string = models.TextField(unique=True)
     akid = models.IntegerField(unique=True)
     slug = models.SlugField(max_length=64, unique=True)
+    
+    queryreport_id = models.IntegerField(null=True, blank=True)
 
     status = models.CharField(max_length=20, null=True, blank=True)
     message = models.TextField(null=True, blank=True)
@@ -119,11 +121,13 @@ class ActiveReport(models.Model):
                 cursor.execute("DROP TABLE %s" % self.local_table)
             except:
                 pass
+        if self.queryreport_id:
+            rest.delete_report(self.queryreport_id)
+            self.queryreport_id = None
         self.status = None
         self.message = None
         self.save()
 
-    # @@TODO this should commit transactions during each save()
     def poll_results(self):
         if self.status == "ready":
             return True

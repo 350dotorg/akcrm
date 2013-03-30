@@ -40,7 +40,8 @@ def get_or_create_report(raw_sql, human_query, query_string):
         ## We'll then have a handle on the newly created report (its URL will be returned in the Location header of the API response)
         ## and also a handle on the run-of-the-report (in the location header of the second API call)
         ## and I guess we'll need to store both of those handles somewhere
-        report = ActiveReport(query_string=query_string, akid=handle, slug=slug)
+        report = ActiveReport(query_string=query_string, akid=handle, slug=slug,
+                              queryreport_id=resp['id'])
 
         report.local_table = report.slug
         report.save()
