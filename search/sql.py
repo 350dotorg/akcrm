@@ -25,26 +25,36 @@ def get_or_create_report(raw_sql, human_query, query_string):
     try:
         report = ActiveReport.objects.get(query_string=query_string)
     except ActiveReport.DoesNotExist:
+        report = ActiveReport(query_string=query_string)
+    
+    if not report.slug:
         slug = ActiveReport.slugify(
             raw_sql + datetime.datetime.now().utcnow().isoformat())
+        report.slug = slug
+    else:
+        slug = report.slug
 
+    if report.queryreport_id is None or report.queryreport_shortname is None:
         ## Create a new report
         ## (https://roboticdogs.actionkit.com/docs/manual/api/rest/reports.html#creating-reports)
         ## using the raw sql
         resp = rest.create_report(raw_sql, human_query, slug, slug)
+        report.queryreport_id = resp['id']
+        queryreport_shortname = report.queryreport_shortname = resp['short_name']
+    else:
+        queryreport_shortname = report.queryreport_shortname
 
+    if report.akid is None:
         ## and then trigger an asynchronous run of that report
         ## (https://roboticdogs.actionkit.com/docs/manual/api/rest/reports.html#running-reports-asynchronously)
-        handle = rest.run_report(resp['short_name'])
+        handle = rest.run_report(queryreport_shortname)
+        
+        report.akid = handle
 
-        ## We'll then have a handle on the newly created report (its URL will be returned in the Location header of the API response)
-        ## and also a handle on the run-of-the-report (in the location header of the second API call)
-        ## and I guess we'll need to store both of those handles somewhere
-        report = ActiveReport(query_string=query_string, akid=handle, slug=slug,
-                              queryreport_id=resp['id'])
-
+    if report.local_table is None:
         report.local_table = report.slug
-        report.save()
+
+    report.save()
 
     return report
 

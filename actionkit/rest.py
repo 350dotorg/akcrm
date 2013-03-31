@@ -60,14 +60,14 @@ def create_report(sql, description, name, short_name):
 
     data = json.dumps(dict(sql=sql, description=description, 
                            name=name, short_name=short_name,
-                           hidden=False))
+                           hidden=True))
 
     url = "%s/rest/v1/queryreport/" % host
     resp = requests.post(url, auth=HTTPBasicAuth(
             settings.ACTIONKIT_API_USER, settings.ACTIONKIT_API_PASSWORD),
                          headers={'content-type': 'application/json'},
                          data=data)
-    assert resp.status_code == 201
+    assert resp.status_code == 201, resp.text
     location = resp.headers['Location']
     return {"id": location.strip("/").split("/")[-1], "short_name": short_name}
 

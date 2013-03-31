@@ -4,6 +4,7 @@ import datetime
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.utils.timezone import now
 
 def make_temporary_model(table_name, extra_fields=None):
     class MyClassMetaclass(models.base.ModelBase):
@@ -80,10 +81,11 @@ import json
 class ActiveReport(models.Model):
     
     query_string = models.TextField(unique=True)
-    akid = models.IntegerField(unique=True)
+    akid = models.IntegerField(unique=True, null=True, blank=True)
     slug = models.SlugField(max_length=64, unique=True)
     
     queryreport_id = models.IntegerField(null=True, blank=True)
+    queryreport_shortname = models.CharField(max_length=255, null=True, blank=True)
 
     status = models.CharField(max_length=20, null=True, blank=True)
     message = models.TextField(null=True, blank=True)
@@ -92,6 +94,8 @@ class ActiveReport(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     local_table_columns = models.TextField(null=True, blank=True)
+
+    cached = models.DateTimeField(null=True, blank=True)
 
     def set_columns(self, columns=[]):
         self.local_table_columns = json.dumps(columns)
@@ -113,19 +117,33 @@ class ActiveReport(models.Model):
         slug = slugify(hash)
         return slug
     
-    def reset(self):
+    def drop_cache(self):
         if self.local_table:
             from django.db import connections
             cursor = connections['dummy'].cursor()
             try:
-                cursor.execute("DROP TABLE %s" % self.local_table)
-            except:
+                cursor.execute("DROP TABLE `%s`" % self.local_table)
+            except Exception, e:
                 pass
+
+    def reset(self):
+        self.drop_cache()
         if self.queryreport_id:
             rest.delete_report(self.queryreport_id)
             self.queryreport_id = None
+        self.queryreport_shortname = None
         self.status = None
+        self.akid = None
         self.message = None
+        self.cached = None
+        self.local_table_columns = None
+        self.save()
+
+    def force_report_rebuild(self):
+        assert self.queryreport_id and self.queryreport_shortname
+        self.drop_cache()
+        self.akid = None
+        self.status = None
         self.save()
 
     def poll_results(self):
@@ -146,6 +164,7 @@ class ActiveReport(models.Model):
             self.save()
             return False
         self.status = "loading"
+        self.cached = now()
         self.save()
         
         from akcrm.search import sql

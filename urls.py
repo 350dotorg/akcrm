@@ -17,6 +17,7 @@ urlpatterns = patterns(
     url(r'^autocomplete/campuses/$', 'campuses', name='autocomplete_campuses'),
 
     url(r'^search/$', 'search', name='search'),
+    url(r'^search/drop_cache/$', 'search_drop_cache', name='search_drop_cache'),
 
     url(r'^search/datatables/(?P<query_string>.*)/$', 'search_datatables',
         name='search_datatables'),

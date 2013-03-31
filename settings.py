@@ -22,8 +22,9 @@ LANGUAGE_CODE = 'en-us'
 SITE_ID = 1
 
 USE_I18N = True
-
 USE_L10N = True
+USE_TZ = True
+DATE_FORMAT = 'N j, Y, P (e)'
 
 # By default urllib, urllib2, and the like have no timeout which can cause
 # some apache processes to hang until they are forced kill.
@@ -157,7 +158,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
     )
 
-AKTIVATOR_REPORT_POLLING_METHOD = "thread"
+AKTIVATOR_REPORT_POLLING_METHOD = "synchronous"
 
 try:
     from local_settings import *

@@ -467,6 +467,21 @@ def home(request):
 
     return locals()
 
+@authorize("search_drop_cache")
+@allow_http("POST")
+def search_drop_cache(request):
+    try:
+        query = build_query(request.META['QUERY_STRING'])
+    except NonNormalQuerystring, e:
+        return e.redirect(request)
+
+    query_string = normalize_querystring(QueryDict(request.META['QUERY_STRING']))
+    report = ActiveReport.objects.get(query_string=query_string)
+    report.force_report_rebuild()
+    resp = redirect("search")
+    resp['Location'] += "%s" % qsify(request.GET)
+    return resp
+
 @allow_http("GET")
 @rendered_with("search.html")
 def search(request):
@@ -496,8 +511,10 @@ def search(request):
         ctx['contact_form'] = contact_form
 
     if request.is_ajax():
-        return HttpResponse(json.dumps(dict(status=report.status)), 
-                            content_type="application/json")
+        return HttpResponse(json.dumps(dict(
+                    status=report.status,
+                    #cached=str(report.cached),
+                    )), content_type="application/json")
     return ctx
 
 @allow_http("GET")

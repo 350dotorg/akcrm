@@ -234,6 +234,21 @@ Search in progress; please wait...
   Searched for people who match::
   <pre>{{ human_query }}</pre>
 </div>
+<div class="results-header" id="date-header">
+  {% if report.status == "ready" %}
+  These results were current as of {{ report.cached|date }}
+
+  {% if request.PERMISSIONS.search_drop_cache %}
+  <form method="POST" style="float: right"
+	action="{% url search_drop_cache %}?{{ request.META.QUERY_STRING }}">
+    {% csrf_token %}
+    <input type="submit" class="btn btn-warning"
+	   style="display: inline-block" value="Re-run this search" />
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+<br />
 
 <div class="datatables_wrapper">
 <table style="display: none" class="display" id="ngot_data">
