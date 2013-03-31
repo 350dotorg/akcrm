@@ -24,7 +24,7 @@ def normalize_querystring(qd):
     qs = []
     for key, vals in querystring.iterlists():
         for val in vals:
-            qs.append((quote(key), quote(val)))
+            qs.append((quote(key.encode("utf8")), quote(val.encode("utf8"))))
     qs = sorted(qs)
     qs = "&".join(["=".join(i) for i in qs])
     return qs

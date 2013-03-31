@@ -67,10 +67,10 @@ def make_default_user_query(users, query_data, values, search_on, extra_data={})
 
     if extra_data.get('istoggle', True):
         users = users.filter(**query)
-        human_query = "%s is in %s" % (search_on, values)
+        human_query = u"%s is in (%s)" % (search_on, u', '.join(values))
     else:
         users = users.exclude(**query)
-        human_query = "%s is not in %s" % (search_on, values)
+        human_query = u"%s is not in (%s)" % (search_on, u', '.join(values))
     return users, human_query
 
 def make_date_query(users, query_data, values, search_on, extra_data={}):
