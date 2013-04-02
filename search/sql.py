@@ -8,8 +8,9 @@ def raw_sql_from_queryset(queryset):
     try:
         # trigger the query
         list(dummy_queryset)
-    except:
-        actual_sql = connections['dummy'].queries[-1]['sql']
+    except Exception, e:
+        queries = connections['dummy'].queries
+        actual_sql = queries[-1]['sql']
         return actual_sql
     else:
         assert False, "Dummy query was expected to fail"
