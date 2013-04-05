@@ -555,7 +555,7 @@ def search_datatables(request, hash):
 
     SearchResult = report.results_model()
 
-    models = SearchResult.objects.using("dummy").all().defer("_aktivator_uid").distinct()
+    models = SearchResult.objects.using("dummy").all().values(*report.get_columns()).distinct()
     from search.datatables import datatablize
     return datatablize(request, models, dict(enumerate(report.get_columns())),
                        jsonTemplatePath="response.json")
