@@ -4,7 +4,7 @@
  [
 {% for field in field_list %}
  {% if field == "name" or field == "email" %}
-  "<a class='expand'  href='{{ item.get_absolute_url }}'>{{ item|getitem:field }}</a>", 
+  "<a class='expand'  href='{% url detail item.id %}'>{{ item|getitem:field }}</a>", 
  {% else %}
  {% if field == "id" %}
   "<a target='_blank'  href='{{ ACTIONKIT_URL }}/admin/user/{{ item.id }}'>{{ item|getitem:field }}</a>", 
