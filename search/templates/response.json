@@ -4,12 +4,12 @@
  [
 {% for field in field_list %}
  {% if field == "name" or field == "email" %}
-  "<a class='expand'  href='{{ item.get_absolute_url }}'>{{ item|getattr:field }}</a>", 
+  "<a class='expand'  href='{{ item.get_absolute_url }}'>{{ item|getitem:field }}</a>", 
  {% else %}
  {% if field == "id" %}
-  "<a target='_blank'  href='{{ ACTIONKIT_URL }}/admin/user/{{ item.id }}'>{{ item|getattr:field }}</a>", 
+  "<a target='_blank'  href='{{ ACTIONKIT_URL }}/admin/user/{{ item.id }}'>{{ item|getitem:field }}</a>", 
  {% else %}
-  "{{ item|getattr:field }}"{% if not forloop.last %},{% endif %}
+  "{{ item|getitem:field }}"{% if not forloop.last %},{% endif %}
  {% endif %}{% endif %}{% endfor %}
  ]{% if not forloop.last %},{% endif %}
 {% endfor %}], "sEcho": {{sEcho}}, "iTotalDisplayRecords": {{iTotalDisplayRecords}} }
