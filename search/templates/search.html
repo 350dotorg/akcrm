@@ -4,10 +4,22 @@
 <head>
   {% block head %}
   <script type="text/javascript">
-    var search_url = window.location.toString();
+    var search_url = window.location.toString();   
+    $("#column_toggles input[type=checkbox]").live("click", function() {
+      var oTable = $("#ngot_data").dataTable(); 
+      var iCol = parseInt($(this).attr("name"));
+      var bVis = oTable.fnSettings().aoColumns[iCol].bVisible;
+      oTable.fnSetColumnVis( iCol, bVis ? false : true );
+    }); 
     window.activateDataTable = function(labelled_columns, hidden_columns) {
       for( var i=0; i<labelled_columns.length; ++i ) {
         $("<th>").text(labelled_columns[i]).appendTo("table#ngot_data thead tr");
+        var label = $("<label>").text(labelled_columns[i])
+          .addClass("checkbox").addClass("inline").css("margin-left", "10px");
+        var checkbox = $("<input>").attr("type", "checkbox").attr("name", i);
+        if( hidden_columns.indexOf(i) == -1 ) { checkbox.attr("checked", "checked"); }
+        checkbox.prependTo(label);
+        label.appendTo("#column_toggles");
       }
       $("table#ngot_data").show().dataTable({
         "bJQueryUI": true,
@@ -20,6 +32,7 @@
         "aoColumnDefs": [{ "bVisible": false, "aTargets": hidden_columns}],
         "sAjaxSource": "{% url search_datatables report.slug %}"
       });
+      $("a[href='#column_toggles']").show();
     };
     window.aktivator = {};
     window.aktivator.numPolls = 0;
@@ -254,14 +267,17 @@ Search in progress; please wait...
 <br />
 
 <div class="datatables_wrapper">
-<table style="display: none" class="display" id="ngot_data">
-  <thead>
-    <tr>
-    </tr>
-  </thead>
-  <tbody>
-  </tbody>
-</table>
+  <a style="display:none" href="#column_toggles" onclick="$('#column_toggles').toggle(); return false;">Select Columns</a>
+  <div style="display:none" id="column_toggles" style="clear:both; padding-bottom:10px">
+  </div>
+  <table style="display: none" class="display" id="ngot_data">
+    <thead>
+      <tr>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
 </div>
 
 {% endblock %}
