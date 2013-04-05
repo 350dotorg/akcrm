@@ -598,7 +598,7 @@ class NonNormalQuerystring(Exception):
         return redirect(request.path + "?" + self.normalized)
 
 from collections import namedtuple
-Query = namedtuple("Query", "human_query query_string includes params raw_sql report_data")
+Query = namedtuple("Query", "human_query query_string raw_sql report_data")
 
 def build_query(querystring, queryset_modifier_fn=None):
     query_params = QueryDict(querystring)
@@ -769,7 +769,7 @@ def build_query(querystring, queryset_modifier_fn=None):
 
     del users
 
-    return Query(human_query, querystring, includes, query_params, raw_sql, None)
+    return Query(human_query, querystring, raw_sql, None)
 
 def error(request, message):
     return dict(message=message)
