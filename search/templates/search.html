@@ -243,7 +243,7 @@ Search in progress; please wait...
 
   {% if request.PERMISSIONS.search_drop_cache %}
   <form method="POST" style="float: right"
-	action="{% url search_drop_cache %}?{{ request.META.QUERY_STRING }}">
+	action="{% url search_drop_cache report.slug %}">
     {% csrf_token %}
     <input type="submit" class="btn btn-warning"
 	   style="display: inline-block" value="Re-run this search" />

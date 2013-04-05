@@ -469,17 +469,16 @@ def home(request):
 
 @authorize("search_drop_cache")
 @allow_http("POST")
-def search_drop_cache(request):
-    try:
-        query = build_query(request.META['QUERY_STRING'])
-    except NonNormalQuerystring, e:
-        return e.redirect(request)
-
-    query_string = normalize_querystring(QueryDict(request.META['QUERY_STRING']))
-    report = ActiveReport.objects.get(query_string=query_string)
+def search_drop_cache(request, hash):
+    report = ActiveReport.objects.get(slug=hash)
     report.force_report_rebuild()
-    resp = redirect("search")
-    resp['Location'] += "%s" % qsify(request.GET)
+
+    resp = request.POST.get("came_from")
+    if resp is None:
+        resp = redirect("search")
+        resp['Location'] += "?%s" % report.query_string
+    else:
+        resp = redirect(resp)
     return resp
 
 @allow_http("GET")
