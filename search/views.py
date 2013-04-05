@@ -511,9 +511,22 @@ def search(request):
         ctx['contact_form'] = contact_form
 
     if request.is_ajax():
+        if report.status == "ready":
+            hidden_columns = []
+            columns = report.get_columns()
+            for index, column in enumerate(columns):
+                if column not in settings.AKTIVATOR_DEFAULT_COLUMNS:
+                    hidden_columns.append(index)
+            labelled_columns = [
+                settings.AKTIVATOR_COLUMN_LABELS.get(column, column)
+                for column in columns
+                ]
+        else:
+            labelled_columns = hidden_columns = None
         return HttpResponse(json.dumps(dict(
                     status=report.status,
-                    #cached=str(report.cached),
+                    hidden_columns=hidden_columns,
+                    labelled_columns=labelled_columns,
                     )), content_type="application/json")
     return ctx
 
@@ -534,23 +547,18 @@ def search_count(request):
     return HttpResponse(num_users, content_type="text/plain")
 
 @allow_http("GET")
-def search_datatables(request, query_string):
-    query_string = normalize_querystring(QueryDict(query_string))
-
-    report = ActiveReport.objects.get(query_string=query_string)
+def search_datatables(request, hash):
+    report = ActiveReport.objects.get(slug=hash)
 
     if report.status != "ready":
         return HttpResponse("not ready")
 
     SearchResult = report.results_model()
 
-    models = SearchResult.objects.using("dummy").all()
+    models = SearchResult.objects.using("dummy").all().defer("_aktivator_uid").distinct()
     from search.datatables import datatablize
-    return datatablize(request, models, dict(enumerate([
-                    "name", "email", "id",
-                    "phone", "country", "state", "city", "campus",
-                    "created_at",
-                    ])), jsonTemplatePath="response.json")
+    return datatablize(request, models, dict(enumerate(report.get_columns())),
+                       jsonTemplatePath="response.json")
 
 def search_raw_sql(request):
     """
@@ -590,7 +598,7 @@ class NonNormalQuerystring(Exception):
         return redirect(request.path + "?" + self.normalized)
 
 from collections import namedtuple
-Query = namedtuple("Query", "human_query query_string includes params raw_sql")
+Query = namedtuple("Query", "human_query query_string includes params raw_sql report_data")
 
 def build_query(querystring, queryset_modifier_fn=None):
     query_params = QueryDict(querystring)
@@ -761,7 +769,7 @@ def build_query(querystring, queryset_modifier_fn=None):
 
     del users
 
-    return Query(human_query, querystring, includes, query_params, raw_sql)
+    return Query(human_query, querystring, includes, query_params, raw_sql, None)
 
 def error(request, message):
     return dict(message=message)
@@ -777,7 +785,8 @@ def _search2(request, query):
         raise NonNormalQuerystring(normalized)
     querystring = normalized
 
-    report = sql.get_or_create_report(query.raw_sql, query.human_query, querystring)
+    report = sql.get_or_create_report(query.raw_sql, query.human_query, querystring,
+                                      query.report_data)
 
     if report.status is None:
         method = settings.AKTIVATOR_REPORT_POLLING_METHOD

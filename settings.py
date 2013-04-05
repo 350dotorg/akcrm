@@ -156,9 +156,34 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.static",
     "django.contrib.messages.context_processors.messages",
     "django.core.context_processors.request",
+    "akcrm.search.context_processors.common_settings",
     )
 
 AKTIVATOR_REPORT_POLLING_METHOD = "synchronous"
+AKTIVATOR_DEFAULT_COLUMNS = [
+    "name",
+    "email",
+    "id",
+    "phone",
+    "country",
+    "state",
+    "city",
+    "campus",
+    "created_at",
+    ]
+AKTIVATOR_COLUMN_LABELS = {
+    "name": "Name",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "id": "ActionKit",
+    "phone": "Phone",
+    "email": "Email",
+    "created_at": "Sign-up Date",
+    "country": "Country",
+    "state": "State",
+    "city": "City",
+    "campus": "Campus",
+    }
 
 try:
     from local_settings import *

@@ -5,7 +5,10 @@
   {% block head %}
   <script type="text/javascript">
     var search_url = window.location.toString();
-    window.activateDataTable = function() {
+    window.activateDataTable = function(labelled_columns, hidden_columns) {
+      for( var i=0; i<labelled_columns.length; ++i ) {
+        $("<th>").text(labelled_columns[i]).appendTo("table#ngot_data thead tr");
+      }
       $("table#ngot_data").show().dataTable({
         "bJQueryUI": true,
         "fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
@@ -14,8 +17,8 @@
         },
         "sPaginationType": "full_numbers",
         "bServerSide": true,
-        "aoColumnDefs": [{ "bSearchable": false, "aTargets": [8]}],
-        "sAjaxSource": "{% url search_datatables query_string %}"
+        "aoColumnDefs": [{ "bVisible": false, "aTargets": hidden_columns}],
+        "sAjaxSource": "{% url search_datatables report.slug %}"
       });
     };
     window.aktivator = {};
@@ -25,7 +28,7 @@
       $.getJSON(search_url, function(data) {
         if( data.status == "ready" ) {
           $("#report_status").hide();
-          activateDataTable();
+          activateDataTable(data.labelled_columns, data.hidden_columns);
         } else if( data.status == "exception") {
           $("#report_status").html("There was an error running this search -- sorry!<br/>We're working on it.");
         } else { 
@@ -253,17 +256,8 @@ Search in progress; please wait...
 <div class="datatables_wrapper">
 <table style="display: none" class="display" id="ngot_data">
   <thead>
-  <tr>
-    <th>Name</th>
-    <th>Email</th>
-    <th>ActionKit</th>
-    <th>Phone</th>
-    <th>Country</th>
-    <th>State</th>
-    <th>City</th>
-    <th>Campus</th>
-    <th>Sign-up Date</th>
-  </tr>
+    <tr>
+    </tr>
   </thead>
   <tbody>
   </tbody>

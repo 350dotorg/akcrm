@@ -71,6 +71,7 @@ class UserSearchQuery(models.Model):
     user = models.ForeignKey(User)
     query = models.ForeignKey(SearchQuery)
 
+
 from django.template.defaultfilters import slugify
 import hashlib
 from akcrm.actionkit import rest
@@ -103,9 +104,17 @@ class ActiveReport(models.Model):
 
     def get_columns(self):
         try:
-            return json.loads(self.local_table_columns)
+            columns = json.loads(self.local_table_columns)
         except (TypeError, ValueError):
             return None
+        ordered_columns = []
+        for column in settings.AKTIVATOR_DEFAULT_COLUMNS:
+            if column in columns:
+                ordered_columns.append(column)
+                columns.remove(column)
+        for column in columns:
+            ordered_columns.append(column)
+        return ordered_columns
 
     def results_model(self):
         assert self.local_table is not None and self.get_columns() is not None

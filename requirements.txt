@@ -1,5 +1,5 @@
 Django
-djangohelpers
+djangohelpers==0.10
 django-debug-toolbar
 http://pypi.python.org/packages/source/M/MySQL-python/MySQL-python-1.2.3.tar.gz
 Fabric
