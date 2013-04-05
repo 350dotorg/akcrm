@@ -6,6 +6,7 @@
 <head>
   {% block head %}
   <script type="text/javascript" src="/static/chosen/chosen.jquery.js"></script>
+  <script type="text/javascript" src="/static/jquery-ui-1.10.2.custom.min.js" />
   <script type="text/javascript">
   function addSet(setGroup, anchor) {
     var container = $(anchor).closest(".and-group");
@@ -35,6 +36,7 @@ console.log(anchor);
         href="/static/jquery/jquery.autocomplete.css" />
   <script type="text/javascript" src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
   <link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
+  <link rel="stylesheet" type="text/css" href="/static/jquery-ui-1.10.2.custom.min.js" />
   <script type="text/javascript">
     $(window).load(function() {
       $(".includeSet.include select.paramset").chosen();
@@ -92,6 +94,8 @@ console.log(anchor);
           } else {
             newEl.chosen();
           }
+        } else if (newEl.attr('placeholder') === 'MM/DD/YYYY') {
+          newEl.datepicker();
         } else {
           var autocompleteUrl = newEl.attr('autocomplete');
           if (autocompleteUrl) {
