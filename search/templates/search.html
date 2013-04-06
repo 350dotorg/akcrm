@@ -19,6 +19,7 @@
         var checkbox = $("<input>").attr("type", "checkbox").attr("name", i);
         if( hidden_columns.indexOf(i) == -1 ) { checkbox.attr("checked", "checked"); }
         checkbox.prependTo(label);
+        if( labelled_columns[i] == "password" ) label.hide();
         label.appendTo("#column_toggles");
       }
       $("table#ngot_data").show().dataTable({

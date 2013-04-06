@@ -1092,7 +1092,7 @@ def safe_encode(value):
 def user_to_csv_row(user, fields):
     row = []
     for field in fields:
-        value = getattr(user, field, '') or ''
+        value = user.get(field, '') or ''
         if callable(value):
             value = value()
         value = safe_encode(value)
@@ -1132,7 +1132,7 @@ def search_csv(request):
     if report.status != "ready":
         return HttpResponse("not ready")
 
-    users = report.results_model().objects.using("dummy").all()
+    users = report.results_model().objects.using("dummy").all().values(*report.get_columns()).distinct()
     for user in users:
         row = user_to_csv_row(user, fields)
         writer.writerow(row)
