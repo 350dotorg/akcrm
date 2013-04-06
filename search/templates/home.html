@@ -6,7 +6,6 @@
 <head>
   {% block head %}
   <script type="text/javascript" src="/static/chosen/chosen.jquery.js"></script>
-  <script type="text/javascript" src="/static/jquery-ui-1.10.2.custom.min.js" />
   <script type="text/javascript">
   function addSet(setGroup, anchor) {
     var container = $(anchor).closest(".and-group");
@@ -32,11 +31,11 @@ console.log(anchor);
     $("<div class='addSetOr'><strong>Or:</strong></div><br/>").insertBefore(wrapper);
   };
   </script>
+  <link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
   <link rel="stylesheet" type="text/css" 
         href="/static/jquery/jquery.autocomplete.css" />
-  <script type="text/javascript" src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
-  <link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
-  <link rel="stylesheet" type="text/css" href="/static/jquery-ui-1.10.2.custom.min.css" />
+  <link rel="stylesheet" type="text/css"
+        href="/static/jquery-ui-1.10.2.custom.min.css" />
   <script type="text/javascript">
     $(window).load(function() {
       $(".includeSet.include select.paramset").chosen();
@@ -477,6 +476,8 @@ console.log(anchor);
 </form>
 </div>
 <br/><br/><br/><br/>
+  <script type="text/javascript" src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
+  <script type="text/javascript" src="/static/jquery-ui-1.10.2.custom.min.js" />
 {% endblock %}
 
 </body>
