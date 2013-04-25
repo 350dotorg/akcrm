@@ -111,8 +111,12 @@ console.log(anchor);
 	  if( pairedEl ) {
             pairedEl = pairedEl.clone();
             pairedEl.attr("name", $(this).attr("name") + "_" + pairedEl.attr("name"));
+
             pairedEl.removeAttr("id");
             newElWrapper.append(pairedEl);
+            if (pairedEl.attr('placeholder') === 'MM/DD/YYYY') {
+              pairedEl.datepicker();
+            } 
           }
         } 
       });
