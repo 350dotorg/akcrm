@@ -1,10 +1,15 @@
+{% load helpful_tags %}
 {"sColumns": "{{cSolumns}}", "iTotalRecords": {{iTotalRecords}}, "aaData": [
 {% for item in querySet %}
  [
-  "<a class='expand'  href='{{ item.get_absolute_url }}'>{{ item.name }}</a>", 
-  "<a class='expand'  href='{{ item.get_absolute_url }}'>{{ item.email }}</a>", 
-  "<a target='_blank' href='{{ item.get_actionkit_url }}'>{{ item.id }}</a>",
-  "{{ item.phone|default:'' }}", "{{ item.country }}", "{{ item.state }}", "{{ item.city }}",
-  "{{ item.campus|default:'' }}", "{{ item.created_at }}"
+{% for field in field_list %}
+ {% if field == "name" or field == "email" %}
+  "<a class='expand'  href='{% url detail item.id %}'>{{ item|getitem:field }}</a>", 
+ {% else %}
+ {% if field == "id" %}
+  "<a target='_blank'  href='{{ ACTIONKIT_URL }}/admin/user/{{ item.id }}'>{{ item|getitem:field }}</a>", 
+ {% else %}
+  "{{ item|getitem:field }}"{% if not forloop.last %},{% endif %}
+ {% endif %}{% endif %}{% endfor %}
  ]{% if not forloop.last %},{% endif %}
 {% endfor %}], "sEcho": {{sEcho}}, "iTotalDisplayRecords": {{iTotalDisplayRecords}} }

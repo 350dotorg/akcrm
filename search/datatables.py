@@ -90,9 +90,13 @@ def datatablize(request, querySet, fields, jsonTemplatePath=None, *args):
     querySet = querySet[startRecord:endRecord]
     # required echo response
     sEcho = int(request.GET.get('sEcho', 0))
+    field_list = []
+    for col in range(0, cols):
+        field_list.append(mapped_fields[col])
     if jsonTemplatePath:
         # prepare the JSON with the response, consider using : from django.template.defaultfilters import escapejs
-        jstonString = render_to_string(jsonTemplatePath, locals())
+        from django.template import RequestContext
+        jstonString = render_to_string(jsonTemplatePath, locals(), context_instance=RequestContext(request))
         response = HttpResponse(jstonString, mimetype="application/javascript")
     else:
         aaData = list(querySet.values_list(*[ col for col in mapped_fields.values()]))

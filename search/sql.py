@@ -8,8 +8,9 @@ def raw_sql_from_queryset(queryset):
     try:
         # trigger the query
         list(dummy_queryset)
-    except:
-        actual_sql = connections['dummy'].queries[-1]['sql']
+    except Exception, e:
+        queries = connections['dummy'].queries
+        actual_sql = queries[-1]['sql']
         return actual_sql
     else:
         assert False, "Dummy query was expected to fail"
@@ -21,7 +22,7 @@ def result_to_model(result_spec, model_class, columns):
                 cell if cell != "None" else None for cell in result_spec]))
     return model_class(**spec)
 
-def get_or_create_report(raw_sql, human_query, query_string):
+def get_or_create_report(raw_sql, human_query, query_string, report_data=None):
     try:
         report = ActiveReport.objects.get(query_string=query_string)
     except ActiveReport.DoesNotExist:
@@ -47,7 +48,7 @@ def get_or_create_report(raw_sql, human_query, query_string):
     if report.akid is None:
         ## and then trigger an asynchronous run of that report
         ## (https://roboticdogs.actionkit.com/docs/manual/api/rest/reports.html#running-reports-asynchronously)
-        handle = rest.run_report(queryreport_shortname)
+        handle = rest.run_report(queryreport_shortname, data=report_data)
         
         report.akid = handle
 

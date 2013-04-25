@@ -100,7 +100,7 @@ def delete_report(report_id):
             settings.ACTIONKIT_API_USER, settings.ACTIONKIT_API_PASSWORD))
     assert resp.status_code == 204
 
-def run_report(name):
+def run_report(name, data=None):
     host = settings.ACTIONKIT_API_HOST
     if not host.startswith("https"):
         host = "https://" + host
@@ -108,6 +108,7 @@ def run_report(name):
     url = "%s/rest/v1/report/background/%s/" % (host, name)
     resp = requests.post(url, auth=HTTPBasicAuth(
             settings.ACTIONKIT_API_USER, settings.ACTIONKIT_API_PASSWORD),
+                         data=data,
                          headers={'Accept': "text/csv"})
 
     assert resp.status_code == 201

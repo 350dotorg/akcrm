@@ -36,6 +36,8 @@ console.log(anchor);
         href="/static/jquery/jquery.autocomplete.css" />
   <link rel="stylesheet" type="text/css"
         href="/static/jquery-ui-1.10.2.custom.min.css" />
+  <script type="text/javascript" src="https://raw.github.com/dyve/jquery-autocomplete/master/src/jquery.autocomplete.js"></script>
+  <link rel="stylesheet" type="text/css" href="/static/chosen/chosen.css" />
   <script type="text/javascript">
     $(window).load(function() {
       $(".includeSet.include select.paramset").chosen();
@@ -93,8 +95,6 @@ console.log(anchor);
           } else {
             newEl.chosen();
           }
-        } else if (newEl.attr('placeholder') === 'MM/DD/YYYY') {
-          newEl.datepicker();
         } else {
           var autocompleteUrl = newEl.attr('autocomplete');
           if (autocompleteUrl) {
