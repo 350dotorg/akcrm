@@ -1,5 +1,7 @@
 # Django settings for irclog project.
 
+GEONAMES_API_USERNAME = "demo"
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
