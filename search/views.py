@@ -703,7 +703,6 @@ def build_query(querystring, queryset_modifier_fn=None):
         all_user_queries.append(users)
         human_query.append("(%s)" % " and ".join(_human_query))
 
-
     human_query = "\n or ".join(human_query)
     users = None
     for i, query in enumerate(all_user_queries):
@@ -762,6 +761,10 @@ def build_query(querystring, queryset_modifier_fn=None):
 
     if queryset_modifier_fn is not None:
         users = queryset_modifier_fn(users)
+
+    if not query_params.get('subscription_all_users', False):
+        users = users.filter(subscription_status='subscribed')
+        human_query += "\n and subscription_status is 'subscribed'"
 
     users = users.distinct()
     raw_sql = sql.raw_sql_from_queryset(users)
