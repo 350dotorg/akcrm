@@ -43,6 +43,10 @@ console.log(anchor);
       $(".includeSet.include select.paramset").chosen();
 
       $("select.paramset").live("change", function() {
+
+        // Make sure no datepicker ghosts remain behind after their inputs have been removed/hidden
+        $(".hasDatepicker").datepicker("hide");
+
         var that = $(this).parent();
         that.find(".searchParam").parent(".searchParamContainer").remove();
         var val = $(this).val();
