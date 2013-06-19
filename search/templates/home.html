@@ -95,6 +95,8 @@ console.log(anchor);
           } else {
             newEl.chosen();
           }
+        } else if (newEl.attr('placeholder') === 'MM/DD/YYYY') {
+          newEl.datepicker();
         } else {
           var autocompleteUrl = newEl.attr('autocomplete');
           if (autocompleteUrl) {
@@ -485,7 +487,8 @@ console.log(anchor);
 </div>
 <br/><br/><br/><br/>
   <script type="text/javascript" src="/static/jquery/jquery.autocomplete.js"></script>
-  <script type="text/javascript" src="/static/jquery-ui-1.10.2.custom.min.js" />
+  <script type="text/javascript" src="/static/jquery-ui-1.10.2.custom.min.js"></script>
+
 {% endblock %}
 
 </body>
