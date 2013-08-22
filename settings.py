@@ -2,7 +2,8 @@
 
 GEONAMES_API_USERNAME = "demo"
 
-DEBUG = True
+import os
+DEBUG = 'DJANGO_DEBUG' in os.environ
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
