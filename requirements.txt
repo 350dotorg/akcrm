@@ -4,5 +4,5 @@ django-debug-toolbar
 http://pypi.python.org/packages/source/M/MySQL-python/MySQL-python-1.2.3.tar.gz
 Fabric
 python-dateutil
-requests==0.13.3
+requests==2.20.0
 git+git://github.com/boldprogressives/django-testrunner-use_live_db.git
